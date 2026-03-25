@@ -1,0 +1,39 @@
+# GramWrite Configuration
+# ─────────────────────────────────────────────
+# backend: auto | ollama | lmstudio
+#   auto  → GramWrite detects whichever is running
+#   ollama    → Force Ollama at localhost:11434
+#   lmstudio  → Force LM Studio at localhost:1234
+backend: auto
+
+# model: any model available in your backend
+# Recommended lightweight models:
+#   qwen2.5:0.5b   (Ollama, ~400MB, fastest)
+#   qwen2.5:1.5b   (Ollama, ~1GB, better quality)
+#   llama3.2:1b    (Ollama, ~1.2GB)
+model: qwen2.5:0.5b
+
+# sensitivity: low | medium | high
+#   low    → Only obvious spelling/grammar errors (min 30 chars)
+#   medium → Standard correction threshold (min 15 chars)
+#   high   → Aggressive, catch everything (min 5 chars)
+sensitivity: medium
+
+# debounce_seconds: seconds of typing inactivity before analysis triggers
+# Increase if suggestions feel intrusive; decrease for faster feedback
+debounce_seconds: 2.0
+
+# max_context_chars: maximum characters extracted from the document
+# Keep low for performance; 300 is sufficient for one paragraph
+max_context_chars: 300
+
+# system_prompt: instructions sent to the LLM on every request
+# Modify carefully — wrong instructions break screenplay grammar rules
+system_prompt: |
+  You are a Hollywood script doctor.
+  Correct grammar and spelling only.
+  Do NOT rewrite stylistic fragments.
+  Do NOT modify ALL CAPS character names or sluglines.
+  Preserve pacing and rhythm of screenplay writing.
+  If the text has no errors, respond with exactly: NO_CORRECTION
+  If there is an error, respond with ONLY the corrected sentence. Do not explain.
