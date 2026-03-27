@@ -62,7 +62,7 @@ Text flow:  Active window → Extract → Parse → Infer → Display
 
 - Python 3.10+
 - One of:
-  - [Ollama](https://ollama.com) with `qwen2.5:0.5b` (recommended)
+  - [Ollama](https://ollama.com) with `qwen3.5:0.8b` (recommended)
   - [LM Studio](https://lmstudio.ai) with any small model loaded
 - macOS 12+ / Windows 10+ / Ubuntu 20.04+
 
@@ -131,7 +131,7 @@ pip install pyatspi
    ```bash
    ollama serve
    # and ensure your model is pulled:
-   ollama pull qwen2.5:0.5b
+   ollama pull qwen3.5:0.8b
    ```
 
 2. **Launch GramWrite**

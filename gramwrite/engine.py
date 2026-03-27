@@ -58,7 +58,7 @@ class GramEngine:
     def __init__(self, config: dict):
         self.config = config
         self.backend: Backend = Backend.NONE
-        self.model: str = config.get("model", "qwen2.5:0.5b")
+        self.model: str = config.get("model", "qwen3.5:0.8b")
         self.system_prompt: str = config.get("system_prompt", SYSTEM_PROMPT_DEFAULT)
         self._session: Optional[aiohttp.ClientSession] = None
         self._lock = asyncio.Lock()

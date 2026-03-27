@@ -113,16 +113,16 @@ if (-not $SkipBackendCheck) {
             $BackendOk = $true
 
             # Check for model
-            if (-not ($resp.Content -match "qwen2.5")) {
-                Write-Log "Pulling qwen2.5:0.5b..."
+            if (-not ($resp.Content -match "qwen3.5")) {
+                Write-Log "Pulling qwen3.5:0.8b..."
                 try {
-                    & ollama pull qwen2.5:0.5b
-                    Write-Ok "qwen2.5:0.5b ready"
+                    & ollama pull qwen3.5:0.8b
+                    Write-Ok "qwen3.5:0.8b ready"
                 } catch {
-                    Write-Warn "Could not pull model. Run: ollama pull qwen2.5:0.5b"
+                    Write-Warn "Could not pull model. Run: ollama pull qwen3.5:0.8b"
                 }
             } else {
-                Write-Ok "qwen2.5:0.5b already available"
+                Write-Ok "qwen3.5:0.8b already available"
             }
         }
     } catch {}
@@ -139,7 +139,7 @@ if (-not $SkipBackendCheck) {
         Write-Warn "No LLM backend detected."
         Write-Host ""
         Write-Host "    Ollama (recommended, free):" -ForegroundColor DarkGray
-        Write-Host "      https://ollama.com → install → run: ollama pull qwen2.5:0.5b" -ForegroundColor DarkGray
+        Write-Host "      https://ollama.com → install → run: ollama pull qwen3.5:0.8b" -ForegroundColor DarkGray
         Write-Host ""
         Write-Host "    LM Studio:" -ForegroundColor DarkGray
         Write-Host "      https://lmstudio.ai → download a model → start local server" -ForegroundColor DarkGray
