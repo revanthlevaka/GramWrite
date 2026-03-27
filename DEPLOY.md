@@ -11,7 +11,7 @@ git branch -M main
 
 # Add all files
 git add .
-git commit -m "feat: GramWrite v1.0.0 — initial release"
+git commit -m "feat: GramWrite v1.1.0 — initial release"
 
 # Create repo on GitHub (requires gh CLI)
 gh repo create gramwrite --public --description "The Invisible Editor for Screenwriters" --push
@@ -19,7 +19,7 @@ gh repo create gramwrite --public --description "The Invisible Editor for Screen
 # OR manually:
 # 1. Create repo at https://github.com/new
 # 2. Then:
-git remote add origin https://github.com/YOUR_USERNAME/gramwrite.git
+git remote add origin https://github.com/revanthlevaka/gramwrite.git
 git push -u origin main
 ```
 
@@ -27,12 +27,12 @@ git push -u origin main
 
 ```bash
 # Tag the release
-git tag -a v1.0.0 -m "GramWrite v1.0.0 — initial release"
-git push origin v1.0.0
+git tag -a v1.1.0 -m "GramWrite v1.1.0 — initial release"
+git push origin v1.1.0
 
 # Create release with gh CLI
-gh release create v1.0.0 \
-  --title "GramWrite v1.0.0" \
+gh release create v1.1.0 \
+  --title "GramWrite v1.1.0" \
   --notes-file MANIFESTO.md \
   --latest
 ```

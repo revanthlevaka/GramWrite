@@ -24,6 +24,7 @@ from PyQt6.QtCore import (
     QObject,
 )
 from PyQt6.QtGui import (
+    QAction,
     QClipboard,
     QColor,
     QFont,
@@ -39,6 +40,7 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -76,7 +78,10 @@ class FloatingDot(QWidget):
     The primary GramWrite icon.
     A small coloured dot that lives in the corner.
     Draggable. Click to show/hide suggestion bubble.
+    Right-click for Settings / Quit context menu.
     """
+
+    open_settings = pyqtSignal()  # emitted when user picks «Settings» from menu
 
     def __init__(self, bridge: SignalBridge, size: int = 28):
         super().__init__(None)
@@ -93,6 +98,7 @@ class FloatingDot(QWidget):
         self._init_window()
         self._init_pulse_timer()
         self._connect_signals()
+        self._init_context_menu()
 
     def _init_window(self):
         self.setWindowFlags(
@@ -123,6 +129,45 @@ class FloatingDot(QWidget):
     def _connect_signals(self):
         self._bridge.correction_ready.connect(self._on_correction_ready)
         self._bridge.state_changed.connect(self._on_state_changed)
+
+    def _init_context_menu(self):
+        self._ctx_menu = QMenu()
+        self._ctx_menu.setStyleSheet("""
+            QMenu {
+                background: #1a1a24;
+                color: #c8c4bc;
+                border: 1px solid rgba(255,255,255,0.12);
+                border-radius: 6px;
+                padding: 4px 0;
+                font-family: 'Courier Prime', monospace;
+                font-size: 11px;
+            }
+            QMenu::item {
+                padding: 6px 24px 6px 16px;
+            }
+            QMenu::item:selected {
+                background: rgba(58,176,120,0.20);
+                color: #e8e4da;
+            }
+            QMenu::separator {
+                height: 1px;
+                background: rgba(255,255,255,0.07);
+                margin: 4px 8px;
+            }
+        """)
+
+        settings_action = QAction("⚙  Settings", self)
+        settings_action.triggered.connect(self.open_settings.emit)
+        self._ctx_menu.addAction(settings_action)
+
+        self._ctx_menu.addSeparator()
+
+        quit_action = QAction("✕  Quit GramWrite", self)
+        quit_action.triggered.connect(QApplication.quit)
+        self._ctx_menu.addAction(quit_action)
+
+    def contextMenuEvent(self, event):
+        self._ctx_menu.exec(event.globalPos())
 
     # ── Paint ─────────────────────────────────────────────────────────────────
 
@@ -420,16 +465,33 @@ class AsyncWorkerThread(QThread):
 # ─── Main entry point ────────────────────────────────────────────────────────
 
 
-def run_app(config: dict):
+def run_app(config: dict, show_dashboard: bool = False):
     """Launch the GramWrite floating UI."""
+    from .engine import GramEngine
+    from .dashboard import DashboardWindow
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("GramWrite")
 
     bridge = SignalBridge()
+    engine = GramEngine(config)
 
     dot = FloatingDot(bridge)
     dot.show()
+
+    # Dashboard (created once, shown on demand)
+    dashboard = DashboardWindow(config, engine)
+
+    def _show_dashboard():
+        dashboard.show()
+        dashboard.raise_()
+        dashboard.activateWindow()
+
+    dot.open_settings.connect(_show_dashboard)
+
+    if show_dashboard:
+        _show_dashboard()
 
     # Start async controller in background thread
     worker = AsyncWorkerThread(config, bridge)

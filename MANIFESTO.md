@@ -112,6 +112,6 @@ That's exactly right.
 
 ---
 
-*GramWrite v1.0.0*
+*GramWrite v1.1.0*
 *MIT License*
 *Local-first. Writer-first. Always.*

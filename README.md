@@ -221,7 +221,17 @@ Supported tools include:
 
 ## Configuration
 
-Edit `config.yaml`:
+### Accessing the Settings Dashboard
+
+After installation, you can open the settings dashboard in three ways:
+
+| Method | How |
+|---|---|
+| **Right-click the dot** | Right-click the floating GramWrite dot → **⚙ Settings** |
+| **CLI flag** | `python -m gramwrite --dashboard` |
+| **Localhost** | Open `http://localhost:7878` (default port, configurable via `--port`) |
+
+### `config.yaml`
 
 ```yaml
 backend: auto
@@ -229,10 +239,12 @@ model: qwen3.5:0.8b
 sensitivity: medium
 debounce_seconds: 2.0
 max_context_chars: 300
+dashboard_port: 7878
 ```
 
-You can also customize the system prompt.
+You can also customize the system prompt in the dashboard or directly in `config.yaml`.
 
+> **Tip:** All settings are saved to `config.yaml` automatically when you click **Save Settings** in the dashboard.
 ---
 
 ## Performance

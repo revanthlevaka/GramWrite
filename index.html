@@ -5,22 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GramWrite — The Invisible Editor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --ink: #0d0d10;
-      --paper: #e8e4da;
-      --dim: #1a1a22;
-      --accent: #3ab078;
-      --accent-dim: rgba(58, 176, 120, 0.15);
-      --text: #c8c4bc;
-      --text-bright: #e8e4da;
-      --text-dim: #5a5860;
-      --border: rgba(255,255,255,0.06);
-      --serif: 'IM Fell English', Georgia, serif;
-      --mono: 'Courier Prime', 'Courier New', monospace;
+      --ink:        #0d0d10;
+      --ink-2:      #13131a;
+      --ink-3:      #1a1a24;
+      --ink-4:      #22222e;
+      --paper:      #e8e4da;
+      --dim:        #1a1a22;
+      --accent:     #3ab078;
+      --accent-2:   #48c88a;
+      --accent-dim: rgba(58,176,120,0.12);
+      --gold:       #c9a84c;
+      --gold-dim:   rgba(201,168,76,0.12);
+      --red:        #e05555;
+      --red-dim:    rgba(224,85,85,0.12);
+      --text:       #c8c4bc;
+      --text-bright:#e8e4da;
+      --text-dim:   #5a5860;
+      --text-ghost: #3a3840;
+      --border:     rgba(255,255,255,0.07);
+      --border-2:   rgba(255,255,255,0.12);
+      --serif:      'IM Fell English', Georgia, serif;
+      --mono:       'Courier Prime', 'Courier New', monospace;
+      --display:    'Bebas Neue', sans-serif;
+      --r:          6px;
     }
 
     html { scroll-behavior: smooth; }
@@ -113,13 +125,13 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-family: var(--serif);
+      font-family: var(--display);
       font-size: clamp(80px, 15vw, 220px);
       color: rgba(255,255,255,0.018);
       white-space: nowrap;
       pointer-events: none;
       user-select: none;
-      letter-spacing: -4px;
+      letter-spacing: 4px;
     }
 
     .hero-eyebrow {
@@ -607,6 +619,7 @@
       <li><a href="#philosophy">Philosophy</a></li>
       <li><a href="#how">How it works</a></li>
       <li><a href="#setup">Setup</a></li>
+      <li><a href="docs.html">Docs</a></li>
       <li><a href="https://github.com/revanthlevaka/GramWrite">GitHub ↗</a></li>
     </ul>
   </nav>
@@ -616,7 +629,7 @@
     <div class="container">
       <div class="hero-bg-text">WRITE</div>
 
-      <p class="hero-eyebrow">v1.0.0 — Open Source</p>
+      <p class="hero-eyebrow">v1.1.0 — Open Source</p>
 
       <h1 class="hero-title">
         Your screenplay.<br>
@@ -828,7 +841,7 @@
         &nbsp;·&nbsp;
         MIT License
         &nbsp;·&nbsp;
-        v1.0.0
+        v1.1.0
         &nbsp;·&nbsp;
         Built by <a href="https://Revanthlevaka.com">Revanth Levaka</a>
       </p>

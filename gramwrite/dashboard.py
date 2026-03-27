@@ -60,51 +60,51 @@ class DashboardWindow(QWidget):
     def _apply_theme(self):
         self.setStyleSheet("""
             QWidget {
-                background-color: #111115;
-                color: #e0e0e8;
-                font-family: 'Courier New', monospace;
+                background-color: #0d0d10;
+                color: #c8c4bc;
+                font-family: 'Courier Prime', 'Courier New', monospace;
                 font-size: 11px;
             }
             QLabel {
-                color: #9090a0;
+                color: #5a5860;
                 letter-spacing: 1px;
                 text-transform: uppercase;
                 font-size: 10px;
                 margin-top: 8px;
             }
             QLabel#value-label {
-                color: #e0e0e8;
+                color: #c8c4bc;
                 font-size: 11px;
                 text-transform: none;
                 letter-spacing: 0;
                 margin-top: 0;
             }
             QComboBox {
-                background: #1e1e26;
-                border: 1px solid #3a3a4a;
+                background: #1a1a24;
+                border: 1px solid rgba(255,255,255,0.12);
                 border-radius: 6px;
                 padding: 6px 10px;
-                color: #e0e0e8;
+                color: #c8c4bc;
                 font-size: 11px;
             }
             QComboBox::drop-down { border: none; }
             QComboBox QAbstractItemView {
-                background: #1e1e26;
-                border: 1px solid #3a3a4a;
-                selection-background-color: #2a3a5a;
+                background: #1a1a24;
+                border: 1px solid rgba(255,255,255,0.12);
+                selection-background-color: rgba(58,176,120,0.12);
             }
             QPlainTextEdit {
-                background: #1e1e26;
-                border: 1px solid #3a3a4a;
+                background: #1a1a24;
+                border: 1px solid rgba(255,255,255,0.12);
                 border-radius: 6px;
                 padding: 8px;
-                color: #c8c8d8;
+                color: #c8c4bc;
                 font-size: 10px;
                 line-height: 1.5;
             }
             QSlider::groove:horizontal {
                 height: 4px;
-                background: #2a2a36;
+                background: #22222e;
                 border-radius: 2px;
             }
             QSlider::handle:horizontal {
@@ -132,15 +132,15 @@ class DashboardWindow(QWidget):
             QPushButton#save-btn:pressed { background: #2e9060; }
             QPushButton#refresh-btn {
                 background: transparent;
-                color: #6090c0;
-                border: 1px solid #3a4a6a;
+                color: #5a5860;
+                border: 1px solid rgba(255,255,255,0.07);
                 border-radius: 6px;
                 padding: 5px 12px;
                 font-size: 10px;
             }
-            QPushButton#refresh-btn:hover { background: #1e2a40; }
+            QPushButton#refresh-btn:hover { background: #1a1a24; }
             QFrame#divider {
-                background: #2a2a36;
+                background: rgba(255,255,255,0.07);
                 max-height: 1px;
             }
         """)
@@ -152,10 +152,10 @@ class DashboardWindow(QWidget):
 
         # Title
         title = QLabel("GRAMWRITE")
-        title.setFont(QFont("Courier New", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #e0e0e8; font-size: 14px; letter-spacing: 4px; margin-bottom: 4px;")
-        subtitle = QLabel("Invisible Editor for Screenwriters")
-        subtitle.setStyleSheet("color: #5a5a6a; font-size: 10px; letter-spacing: 2px; text-transform: none; margin-top: 0;")
+        title.setFont(QFont("Courier Prime", 14, QFont.Weight.Bold))
+        title.setStyleSheet("color: #e8e4da; font-size: 14px; letter-spacing: 4px; margin-bottom: 4px;")
+        subtitle = QLabel("The Invisible Editor")
+        subtitle.setStyleSheet("color: #5a5860; font-size: 10px; letter-spacing: 2px; text-transform: none; margin-top: 0;")
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
@@ -207,7 +207,7 @@ class DashboardWindow(QWidget):
         layout.addLayout(sens_row)
 
         sens_hint = QLabel("Low = major errors only  ·  High = all suggestions")
-        sens_hint.setStyleSheet("color: #4a4a5a; font-size: 9px; margin-top: 2px;")
+        sens_hint.setStyleSheet("color: #3a3840; font-size: 9px; margin-top: 2px;")
         layout.addWidget(sens_hint)
 
         # System Prompt

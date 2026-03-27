@@ -31,6 +31,7 @@ def load_config(path: Path) -> dict:
         ),
         "debounce_seconds": 2.0,
         "max_context_chars": 300,
+        "dashboard_port": 7878,
     }
 
     if path.exists():
@@ -81,15 +82,24 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version="GramWrite 1.0.0",
+        version="GramWrite 1.1.0",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Dashboard port (default: 7878, set in config.yaml)",
     )
     args = parser.parse_args()
 
     setup_logging(args.verbose)
     config = load_config(args.config)
 
+    if args.port is not None:
+        config["dashboard_port"] = args.port
+
     from .app import run_app
-    run_app(config)
+    run_app(config, show_dashboard=args.dashboard)
 
 
 if __name__ == "__main__":

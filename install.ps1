@@ -22,7 +22,7 @@ function Write-Head { Write-Host "`n  $args" -ForegroundColor White }
 # ── Banner ────────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "  ┌─────────────────────────────────────────┐" -ForegroundColor DarkGray
-Write-Host "  │  G R A M W R I T E   v1.0.0             │" -ForegroundColor DarkGray
+Write-Host "  │  G R A M W R I T E   v1.1.0             │" -ForegroundColor DarkGray
 Write-Host "  │  The Invisible Editor for Screenwriters  │" -ForegroundColor DarkGray
 Write-Host "  └─────────────────────────────────────────┘" -ForegroundColor DarkGray
 Write-Host ""
