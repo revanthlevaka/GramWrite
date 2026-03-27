@@ -18,7 +18,7 @@ def load_config(path: Path) -> dict:
     """Load config.yaml, fall back to defaults if missing."""
     defaults = {
         "backend": "auto",
-        "model": "qwen2.5:0.5b",
+        "model": "qwen3.5:0.8b",
         "sensitivity": "medium",
         "system_prompt": (
             "You are a Hollywood script doctor.\n"

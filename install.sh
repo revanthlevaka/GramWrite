@@ -134,16 +134,16 @@ if curl -sf "http://localhost:11434/api/tags" &>/dev/null; then
     ok "Ollama is running at localhost:11434"
     BACKEND_OK=true
     # Pull default model if not present
-    if ! curl -sf "http://localhost:11434/api/tags" | grep -q "qwen2.5"; then
-        log "Pulling qwen2.5:0.5b (this may take a moment)…"
-        ollama pull qwen2.5:0.5b && ok "qwen2.5:0.5b ready" || warn "Could not pull model — pull manually: ollama pull qwen2.5:0.5b"
+    if ! curl -sf "http://localhost:11434/api/tags" | grep -q "qwen3.5"; then
+        log "Pulling qwen3.5:0.8b (this may take a moment)…"
+        ollama pull qwen3.5:0.8b && ok "qwen3.5:0.8b ready" || warn "Could not pull model — pull manually: ollama pull qwen3.5:0.8b"
     else
-        ok "qwen2.5:0.5b already available"
+        ok "qwen3.5:0.8b already available"
     fi
 elif command -v ollama &>/dev/null; then
     warn "Ollama installed but not running."
     echo "    Start with:  ollama serve"
-    echo "    Then pull:   ollama pull qwen2.5:0.5b"
+    echo "    Then pull:   ollama pull qwen3.5:0.8b"
 else
     warn "Ollama not found. Install from https://ollama.com"
 fi
@@ -158,10 +158,10 @@ if [ "$BACKEND_OK" = false ]; then
     warn "No LLM backend detected. GramWrite needs Ollama or LM Studio to function."
     echo ""
     echo "    Ollama (recommended, free):"
-    echo "      https://ollama.com → install → ollama pull qwen2.5:0.5b"
+    echo "      https://ollama.com → install → ollama pull qwen3.5:0.8b"
     echo ""
     echo "    LM Studio:"
-    echo "      https://lmstudio.ai → download qwen2.5 → start local server"
+    echo "      https://lmstudio.ai → download qwen3.5 → start local server"
 fi
 
 # ── macOS Accessibility ────────────────────────────────────────────────────────

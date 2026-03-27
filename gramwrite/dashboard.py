@@ -176,7 +176,7 @@ class DashboardWindow(QWidget):
         model_row.setSpacing(8)
         self._model_combo = QComboBox()
         self._model_combo.setEditable(True)
-        self._model_combo.addItem(self._config.get("model", "qwen2.5:0.5b"))
+        self._model_combo.addItem(self._config.get("model", "qwen3.5:0.8b"))
         model_row.addWidget(self._model_combo)
 
         self._refresh_btn = QPushButton("↻ Refresh")
@@ -267,7 +267,7 @@ class DashboardWindow(QWidget):
             self._model_combo.clear()
             if models:
                 self._model_combo.addItems(models)
-                current = self._config.get("model", "qwen2.5:0.5b")
+                current = self._config.get("model", "qwen3.5:0.8b")
                 idx = self._model_combo.findText(current)
                 if idx >= 0:
                     self._model_combo.setCurrentIndex(idx)
@@ -275,7 +275,7 @@ class DashboardWindow(QWidget):
                     self._model_combo.addItem(current)
                     self._model_combo.setCurrentText(current)
             else:
-                self._model_combo.addItem(self._config.get("model", "qwen2.5:0.5b"))
+                self._model_combo.addItem(self._config.get("model", "qwen3.5:0.8b"))
             self._refresh_btn.setText("↻ Refresh")
             self._refresh_btn.setEnabled(True)
 

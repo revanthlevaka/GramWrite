@@ -128,12 +128,11 @@ app.py             → Floating UI (PyQt6)
 
 ## Requirements
 
-* Python 3.10+
-* One of:
-
-  * Ollama (**Qwen3.5:0.8B recommended**)
-  * LM Studio (any small local model)
-* macOS 12+ / Windows 10+ / Ubuntu 20.04+
+- Python 3.10+
+- One of:
+  - [Ollama](https://ollama.com) with `qwen3.5:0.8b` (recommended)
+  - [LM Studio](https://lmstudio.ai) with any small model loaded
+- macOS 12+ / Windows 10+ / Ubuntu 20.04+
 
 ---
 
@@ -168,7 +167,27 @@ pip install -e .
 
 ## Usage
 
-### 1. Start your LLM backend
+1. **Start your LLM backend**
+   ```bash
+   ollama serve
+   # and ensure your model is pulled:
+   ollama pull qwen3.5:0.8b
+   ```
+
+2. **Launch GramWrite**
+   ```bash
+   ./gramwrite.sh
+   ```
+
+3. **Write normally** in Fade In, Final Draft, or Highland
+
+4. **GramWrite watches silently** — the dot stays grey while you type
+
+5. **After 2 seconds of inactivity**, GramWrite analyses the current paragraph
+
+6. **If there's a correction**, the dot glows green
+
+7. **Click the dot** to see the suggestion bubble
 
 ```bash
 ollama serve
