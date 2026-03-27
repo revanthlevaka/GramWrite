@@ -31,7 +31,7 @@ That's the whole experience.
 │  │ OS      │    │  classify    │    │  LM Studio      │  │
 │  │ Accessib│    │  dialogue?   │    │  (local only)  │  │
 │  │ -ility  │    │  action?     │    │                │  │
-│  │ API     │    │  slugline?   │    │  qwen2.5:0.5b  │  │
+│  │ API     │    │  slugline?   │    │  qwen3.5:0.8b  │  │
 │  └─────────┘    └──────────────┘    └────────────────┘  │
 │       │                │                    │            │
 │       └────────────────┴────────────────────┘            │
@@ -188,7 +188,7 @@ Edit `config.yaml`:
 
 ```yaml
 backend: auto          # auto | ollama | lmstudio
-model: qwen2.5:0.5b    # any model in your backend
+model: qwen3.5:0.8b    # any model in your backend
 sensitivity: medium    # low | medium | high
 debounce_seconds: 2.0  # seconds of inactivity before check
 max_context_chars: 300 # characters extracted per check
@@ -217,8 +217,8 @@ This is a commitment, not just a feature. The source is open and auditable.
 
 | Model | Size | Avg latency | RAM |
 |-------|------|-------------|-----|
-| qwen2.5:0.5b | 400MB | ~50–80ms | ~600MB |
-| qwen2.5:1.5b | 1GB | ~100–150ms | ~1.2GB |
+| qwen3.5:0.8b | 400MB | ~50–80ms | ~600MB |
+| qwen3.5:1.5b | 1GB | ~100–150ms | ~1.2GB |
 | llama3.2:1b | 1.2GB | ~80–120ms | ~1.5GB |
 
 GramWrite only processes short text segments (~300 chars), keeping inference fast even on modest hardware.
