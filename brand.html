@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GramWrite — Brand Manual & Dashboard</title>
+  <meta name="description" content="GramWrite brand identity, design system, dashboard UI, and live grammar demonstration.">
+  <link rel="canonical" href="https://gramwrite.revanthlevaka.com/brand.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       TOKENS
+    ═══════════════════════════════════════════════════════════ */
+    :root {
+      --ink:        #0d0d10;
+      --ink-2:      #13131a;
+      --ink-3:      #1a1a24;
+      --ink-4:      #22222e;
+      --accent:     #3ab078;
+      --accent-2:   #48c88a;
+      --accent-dim: rgba(58,176,120,0.12);
+      --gold:       #c9a84c;
+      --gold-dim:   rgba(201,168,76,0.12);
+      --red:        #e05555;
+      --red-dim:    rgba(224,85,85,0.12);
+      --text:       #c8c4bc;
+      --text-bright:#e8e4da;
+      --text-dim:   #5a5860;
+      --text-ghost: #3a3840;
+      --border:     rgba(255,255,255,0.07);
+      --border-2:   rgba(255,255,255,0.12);
+      --serif:      'IM Fell English', Georgia, serif;
+      --mono:       'Courier Prime', 'Courier New', monospace;
+      --display:    'Bebas Neue', sans-serif;
+      --r:          6px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      background-size: 200px; pointer-events: none; z-index: 9999; opacity: 0.5;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--ink); }
+    ::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 2px; }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(13,13,16,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 52px;
+    }
+    .topnav-logo { font-family: var(--mono); font-size: 11px; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; text-decoration: none; }
+    .topnav-logo span { color: var(--accent); }
+    .topnav-links { display: flex; gap: 4px; }
+    .topnav-links a {
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-dim); text-decoration: none;
+      padding: 5px 12px; border-radius: 3px;
+      transition: all 0.2s;
+    }
+    .topnav-links a:hover { color: var(--text); background: var(--ink-3); }
+    .topnav-links a.active { color: var(--accent); background: var(--accent-dim); }
+    .back-link { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+    .back-link:hover { color: var(--accent); }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 120px 0 80px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: 'BRAND';
+      position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+      font-family: var(--display); font-size: 220px;
+      color: rgba(255,255,255,0.015); pointer-events: none; user-select: none;
+      line-height: 1;
+    }
+    .ph-eyebrow { font-size: 9px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; }
+    .ph-title { font-family: var(--serif); font-size: clamp(40px, 5vw, 64px); font-style: italic; color: var(--text-bright); line-height: 1.1; margin-bottom: 16px; }
+    .ph-sub { font-size: 13px; color: var(--text-dim); max-width: 540px; line-height: 1.8; }
+
+    /* ── SECTION SCAFFOLDING ── */
+    .doc-section { padding: 80px 0; border-bottom: 1px solid var(--border); }
+    .doc-section:last-child { border-bottom: none; }
+
+    .section-anchor { display: block; position: relative; top: -70px; visibility: hidden; }
+
+    .section-eyebrow {
+      font-size: 9px; letter-spacing: 5px; color: var(--accent);
+      text-transform: uppercase; margin-bottom: 36px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .section-eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--accent); flex-shrink: 0; }
+
+    .section-title { font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px); font-style: italic; color: var(--text-bright); margin-bottom: 12px; line-height: 1.2; }
+    .section-body { font-size: 13px; color: var(--text-dim); max-width: 600px; line-height: 1.85; margin-bottom: 48px; }
+
+    /* ── BRAND MANUAL ── */
+
+    /* Logo showcase */
+    .logo-showcase {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .logo-cell {
+      padding: 48px 32px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      min-height: 180px;
+    }
+    .logo-cell.dark  { background: var(--ink); }
+    .logo-cell.mid   { background: var(--ink-3); }
+    .logo-cell.light { background: #e8e4da; }
+    .logo-cell.light .logo-mark { background: var(--ink); color: var(--accent); }
+    .logo-cell.light .logo-text { color: var(--ink); }
+    .logo-cell.light .logo-tagline { color: #6a6860; }
+
+    .logo-lockup { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; position: relative;
+    }
+    .logo-mark-inner {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(0,0,0,0.4);
+    }
+    .logo-mark.pulse-demo { animation: brandPulse 2.5s ease-in-out infinite; }
+    @keyframes brandPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(58,176,120,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(58,176,120,0); }
+    }
+    .logo-text { font-family: var(--mono); font-size: 18px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-bright); font-weight: 700; }
+    .logo-tagline { font-family: var(--serif); font-size: 11px; font-style: italic; color: var(--text-dim); margin-top: 6px; letter-spacing: 1px; }
+    .logo-cell-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-ghost); margin-top: 8px; }
+
+    /* Color palette */
+    .color-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      gap: 12px; margin-bottom: 48px;
+    }
+    .color-swatch { border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+    .swatch-block { height: 80px; }
+    .swatch-info { padding: 10px 12px; background: var(--ink-3); }
+    .swatch-name { font-size: 10px; letter-spacing: 1px; color: var(--text-bright); text-transform: uppercase; }
+    .swatch-hex  { font-size: 10px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); }
+
+    /* Typography specimens */
+    .type-specimens { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 48px; }
+    .type-card { background: var(--ink-3); border: 1px solid var(--border); border-radius: var(--r); padding: 28px; }
+    .type-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 16px; }
+    .type-specimen-serif { font-family: var(--serif); font-size: 36px; font-style: italic; color: var(--text-bright); line-height: 1.15; }
+    .type-specimen-mono  { font-family: var(--mono); font-size: 16px; color: var(--text); letter-spacing: 1px; line-height: 1.6; }
+    .type-specimen-display { font-family: var(--display); font-size: 52px; color: var(--text-bright); letter-spacing: 3px; line-height: 1; }
+    .type-meta { margin-top: 12px; font-size: 10px; color: var(--text-dim); line-height: 1.6; }
+
+    /* Dot states */
+    .dot-states {
+      display: flex; gap: 40px; align-items: flex-start;
+      margin-bottom: 48px; flex-wrap: wrap;
+    }
+    .dot-state { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .dot-demo {
+      width: 40px; height: 40px; border-radius: 50%;
+      position: relative; flex-shrink: 0;
+    }
+    .dot-demo.idle    { background: rgba(80,80,90,0.8); }
+    .dot-demo.proc    { background: #3c6aa0; animation: dotProc 1.2s ease-in-out infinite; }
+    .dot-demo.alert   { background: var(--accent); animation: dotAlert 2s ease-in-out infinite; box-shadow: 0 0 0 0 rgba(58,176,120,0.4); }
+    .dot-demo.error   { background: var(--red); }
+    .dot-demo::after  { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid; opacity: 0; }
+    .dot-demo.alert::after { border-color: rgba(58,176,120,0.35); animation: dotRing 2s ease-in-out infinite; }
+    @keyframes dotProc {
+      0%,100% { opacity: 0.9; transform: scale(1); }
+      50%      { opacity: 0.55; transform: scale(0.9); }
+    }
+    @keyframes dotAlert {
+      0%,100% { box-shadow: 0 0 0 0 rgba(58,176,120,0.45); }
+      50%      { box-shadow: 0 0 0 10px rgba(58,176,120,0); }
+    }
+    @keyframes dotRing {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .dot-state-name  { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+    .dot-state-desc  { font-size: 11px; color: var(--text-ghost); text-align: center; max-width: 90px; line-height: 1.5; }
+
+    /* Voice examples */
+    .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 48px; }
+    .voice-card { border-radius: var(--r); padding: 24px; border: 1px solid; }
+    .voice-card.good { background: rgba(58,176,120,0.05); border-color: rgba(58,176,120,0.2); }
+    .voice-card.bad  { background: rgba(224,85,85,0.05); border-color: rgba(224,85,85,0.2); }
+    .voice-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+    .voice-card.good .voice-label { color: var(--accent); }
+    .voice-card.bad  .voice-label { color: var(--red); }
+    .voice-text { font-family: var(--serif); font-size: 14px; font-style: italic; color: var(--text); line-height: 1.7; }
+
+    /* ── DASHBOARD UI ── */
+
+    .dashboard-wrapper {
+      background: var(--ink-2);
+      border: 1px solid var(--border-2);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      margin-bottom: 48px;
+    }
+
+    /* Window chrome */
+    .dash-chrome {
+      background: var(--ink-3);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .chrome-dots { display: flex; gap: 6px; }
+    .chrome-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .cd-red    { background: #e05555; }
+    .cd-yellow { background: #c9a84c; }
+    .cd-green  { background: var(--accent); }
+    .chrome-title { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-left: 8px; }
+
+    /* Dashboard layout */
+    .dash-layout {
+      display: grid; grid-template-columns: 240px 1fr;
+      min-height: 560px;
+    }
+
+    /* Sidebar */
+    .dash-sidebar {
+      background: var(--ink);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+    }
+    .dash-sidebar-logo {
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .dash-sidebar-logo .logo-lockup { gap: 10px; }
+    .dash-sidebar-logo .logo-mark { width: 28px; height: 28px; }
+    .dash-sidebar-logo .logo-text { font-size: 14px; letter-spacing: 2px; }
+
+    .dash-nav-group { margin-bottom: 4px; }
+    .dash-nav-label {
+      font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-ghost); padding: 8px 20px 4px;
+    }
+    .dash-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 20px;
+      font-size: 12px; color: var(--text-dim);
+      cursor: pointer; transition: all 0.15s;
+      border-left: 2px solid transparent;
+      user-select: none;
+    }
+    .dash-nav-item:hover { background: var(--ink-3); color: var(--text); }
+    .dash-nav-item.active { background: var(--accent-dim); color: var(--accent); border-left-color: var(--accent); }
+    .dash-nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+    .dash-status {
+      margin: 16px; padding: 12px 14px;
+      background: var(--ink-3); border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .dash-status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dotAlert 2s ease-in-out infinite; flex-shrink: 0; }
+    .status-dot.offline { background: var(--red); animation: none; }
+    .status-label { font-size: 10px; letter-spacing: 1px; color: var(--text); text-transform: uppercase; }
+    .status-detail { font-size: 10px; color: var(--text-dim); line-height: 1.5; }
+
+    /* Main panel */
+    .dash-main { background: var(--ink-2); }
+
+    .dash-tabs {
+      display: flex; gap: 2px;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .dash-tab {
+      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 8px 18px; border-radius: 4px 4px 0 0;
+      color: var(--text-dim); cursor: pointer;
+      border: 1px solid transparent; border-bottom: none;
+      transition: all 0.15s; user-select: none;
+      position: relative; bottom: -1px;
+    }
+    .dash-tab:hover:not(.active) { background: var(--ink-3); color: var(--text); }
+    .dash-tab.active {
+      background: var(--ink-2); color: var(--accent);
+      border-color: var(--border); border-bottom-color: var(--ink-2);
+    }
+
+    .dash-panel { display: none; padding: 28px 28px 32px; }
+    .dash-panel.active { display: block; }
+
+    /* Settings form */
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .settings-full { grid-column: 1 / -1; }
+
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+    .form-hint  { font-size: 10px; color: var(--text-ghost); line-height: 1.5; margin-top: 2px; }
+
+    .form-select, .form-input {
+      background: var(--ink); border: 1px solid var(--border-2);
+      border-radius: 5px; padding: 10px 14px;
+      font-family: var(--mono); font-size: 12px; color: var(--text);
+      outline: none; transition: border-color 0.2s;
+      -webkit-appearance: none; appearance: none;
+      width: 100%;
+    }
+    .form-select:focus, .form-input:focus { border-color: rgba(58,176,120,0.4); }
+
+    .form-select-wrap { position: relative; }
+    .form-select-wrap::after {
+      content: '▾'; position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); color: var(--text-dim);
+      pointer-events: none; font-size: 10px;
+    }
+
+    .form-textarea {
+      background: var(--ink); border: 1px solid var(--border-2);
+      border-radius: 5px; padding: 12px 14px;
+      font-family: var(--mono); font-size: 11px; color: var(--text);
+      outline: none; resize: vertical; width: 100%; line-height: 1.7;
+      min-height: 100px; transition: border-color 0.2s;
+    }
+    .form-textarea:focus { border-color: rgba(58,176,120,0.4); }
+
+    /* Sensitivity slider */
+    .sensitivity-row { display: flex; align-items: center; gap: 16px; }
+    .sensitivity-slider {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; background: var(--ink-4); border-radius: 2px; outline: none;
+    }
+    .sensitivity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .sensitivity-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .sensitivity-val { font-size: 11px; color: var(--accent); min-width: 50px; text-align: right; }
+
+    /* Toggle */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-info {}
+    .toggle-name { font-size: 12px; color: var(--text); }
+    .toggle-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+    .toggle {
+      width: 40px; height: 22px; border-radius: 11px;
+      background: var(--ink-4); border: 1px solid var(--border-2);
+      position: relative; cursor: pointer; transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle.on { background: var(--accent); border-color: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      border-radius: 50%; background: #fff; top: 2px; left: 2px;
+      transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    /* Save button */
+    .save-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 5px;
+      padding: 10px 22px; font-family: var(--mono);
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer;
+      transition: all 0.2s; margin-top: 20px;
+    }
+    .save-btn:hover { background: var(--accent-2); transform: translateY(-1px); }
+
+    /* ── GRAMMAR DEMO ── */
+    .grammar-demo-wrapper {
+      background: var(--ink-2);
+      border: 1px solid var(--border-2);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+
+    .demo-layout {
+      display: grid; grid-template-columns: 1fr 320px;
+      min-height: 480px;
+    }
+
+    /* Screenplay editor panel */
+    .screenplay-pane {
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .screenplay-toolbar {
+      background: var(--ink-3);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .toolbar-title { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+    .toolbar-badge {
+      font-size: 9px; letter-spacing: 1px; padding: 3px 9px;
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid rgba(58,176,120,0.25); border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .screenplay-editor {
+      padding: 28px 40px;
+      font-family: var(--mono); font-size: 13px;
+      line-height: 2.1; color: var(--text);
+      cursor: text; min-height: 420px;
+    }
+    .sc-slugline { color: var(--text-bright); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .sc-action   { color: #9a9890; margin-bottom: 4px; }
+    .sc-character { text-align: center; color: var(--text-bright); text-transform: uppercase; margin: 8px 0 0; }
+    .sc-dialogue  { margin: 0 80px 8px; color: var(--text); }
+    .sc-transition { text-align: right; color: var(--text-bright); text-transform: uppercase; margin-top: 8px; }
+
+    /* inline error highlights */
+    .err-underline {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1px;
+      position: relative;
+      cursor: pointer;
+    }
+    .err-underline.red { border-bottom-color: var(--red); }
+
+    /* Floating correction tooltip */
+    .tooltip-anchor { position: relative; display: inline; }
+    .correction-tooltip {
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink-4); border: 1px solid rgba(58,176,120,0.3);
+      border-radius: 6px; padding: 8px 12px;
+      font-size: 11px; white-space: nowrap;
+      color: var(--text-bright); z-index: 10;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .correction-tooltip::after {
+      content: '';
+      position: absolute; top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(58,176,120,0.3);
+    }
+    .tooltip-anchor:hover .correction-tooltip { opacity: 1; }
+    .correction-tooltip .original { color: var(--red); text-decoration: line-through; margin-right: 6px; }
+    .correction-tooltip .fixed    { color: var(--accent); }
+
+    /* GramWrite panel */
+    .gw-panel {
+      background: var(--ink); display: flex; flex-direction: column;
+    }
+    .gw-panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .gw-panel-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); }
+    .gw-dot-live {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--accent); animation: dotAlert 2s ease-in-out infinite;
+    }
+
+    .gw-corrections { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+
+    .correction-card {
+      background: var(--ink-3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 14px 14px 12px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .correction-card:hover { border-color: rgba(58,176,120,0.25); }
+    .correction-card.applied { border-color: rgba(58,176,120,0.35); opacity: 0.6; }
+
+    .cc-type {
+      font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 2px; display: inline-block;
+      margin-bottom: 8px;
+    }
+    .cc-type.dialogue { background: var(--accent-dim); color: var(--accent); }
+    .cc-type.action   { background: var(--gold-dim); color: var(--gold); }
+
+    .cc-original {
+      font-size: 12px; color: var(--red); font-style: italic;
+      margin-bottom: 4px; line-height: 1.5;
+    }
+    .cc-arrow { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+    .cc-fixed { font-size: 12px; color: var(--accent); line-height: 1.5; }
+    .cc-reason { font-size: 10px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+
+    .cc-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .cc-btn {
+      font-family: var(--mono); font-size: 9px; letter-spacing: 1px;
+      text-transform: uppercase; padding: 4px 10px;
+      border-radius: 3px; cursor: pointer; border: 1px solid;
+      transition: all 0.15s;
+    }
+    .cc-btn.apply { background: var(--accent-dim); color: var(--accent); border-color: rgba(58,176,120,0.3); }
+    .cc-btn.apply:hover { background: var(--accent); color: #fff; }
+    .cc-btn.dismiss { background: transparent; color: var(--text-dim); border-color: var(--border); }
+    .cc-btn.dismiss:hover { color: var(--text); }
+
+    .gw-panel-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .gw-stats { font-size: 10px; color: var(--text-dim); line-height: 1.5; }
+    .gw-stats strong { color: var(--text); }
+
+    /* ── USAGE STATES SECTION ── */
+    .states-showcase {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 16px; margin-bottom: 48px;
+    }
+    .state-card {
+      background: var(--ink-2); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+    }
+    .state-card-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .state-card-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); }
+    .state-card-body { padding: 20px 16px; }
+
+    /* Mini floating dot within state card */
+    .mini-dot { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; }
+    .mini-dot.idle  { background: rgba(80,80,90,0.7); }
+    .mini-dot.proc  { background: #3c6aa0; animation: dotProc 1.2s ease-in-out infinite; }
+    .mini-dot.alert { background: var(--accent); animation: dotAlert 2s ease-in-out infinite; }
+
+    /* Mini bubble */
+    .mini-bubble {
+      background: var(--ink-3); border: 1px solid var(--border-2);
+      border-radius: 8px; padding: 12px 14px; font-size: 11px;
+    }
+    .mini-bubble-head { font-size: 8px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+    .mini-bubble-text { color: var(--accent); line-height: 1.5; }
+    .mini-bubble-btns { display: flex; gap: 6px; margin-top: 8px; }
+    .mini-copy-btn {
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 3px; padding: 4px 10px; cursor: pointer;
+    }
+    .mini-dismiss-btn {
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      background: transparent; color: var(--text-dim);
+      border: 1px solid var(--border); border-radius: 3px; padding: 4px 10px; cursor: pointer;
+    }
+    .state-desc { font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+
+    /* ── SPEC TABLE ── */
+    .spec-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+    .spec-table th {
+      text-align: left; font-size: 9px; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--text-dim);
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+    }
+    .spec-table td {
+      padding: 11px 14px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: var(--text); vertical-align: top; line-height: 1.6;
+    }
+    .spec-table tr:last-child td { border-bottom: none; }
+    .spec-table td:first-child { color: var(--text-dim); width: 180px; }
+    .spec-table td code { font-family: var(--mono); background: var(--ink-3); border: 1px solid var(--border); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+
+    /* ── FOOTER ── */
+    .brand-footer {
+      padding: 56px 0; border-top: 1px solid var(--border);
+    }
+    .bf-inner { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
+    .bf-tagline { font-family: var(--serif); font-size: 18px; font-style: italic; color: var(--text-dim); margin-bottom: 8px; }
+    .bf-credit { font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+    .bf-credit strong { color: var(--text); font-weight: normal; }
+    .bf-credit a { color: var(--accent); text-decoration: none; }
+    .bf-credit a:hover { text-decoration: underline; }
+    .bf-links { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 10px; letter-spacing: 1px; color: var(--text-dim); }
+    .bf-links a { color: var(--text-dim); text-decoration: none; }
+    .bf-links a:hover { color: var(--accent); }
+    .bf-links-row { display: flex; gap: 14px; }
+
+    /* ── ANIMATIONS / REVEAL ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .reveal { opacity:0; transform:translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .page { padding: 0 24px; }
+      .dash-layout { grid-template-columns: 1fr; }
+      .dash-sidebar { display: none; }
+      .demo-layout { grid-template-columns: 1fr; }
+      .gw-panel { border-top: 1px solid var(--border); }
+      .settings-grid { grid-template-columns: 1fr; }
+      .type-specimens { grid-template-columns: 1fr; }
+      .color-grid { grid-template-columns: repeat(3,1fr); }
+      .logo-showcase { grid-template-columns: 1fr; }
+      .voice-grid { grid-template-columns: 1fr; }
+      .states-showcase { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .topnav-links { display: none; }
+      .color-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <a class="topnav-logo" href="index.html">Gram<span>Write</span></a>
+    <div class="topnav-links">
+      <a href="#brand">Brand</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#demo">Grammar Demo</a>
+      <a href="#specs">Specs</a>
+    </div>
+    <a class="back-link" href="index.html">← Back to site</a>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <header class="page-header">
+    <div class="page">
+      <p class="ph-eyebrow">Brand Manual · UI System · Live Demo</p>
+      <h1 class="ph-title">GramWrite<br>Design System</h1>
+      <p class="ph-sub">Identity guidelines, UI components, interaction patterns, and a live demonstration of the grammar correction system — all in one document.</p>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ══════════════════════════════════════════
+         § 1 — BRAND IDENTITY
+    ═══════════════════════════════════════════ -->
+    <section class="doc-section" id="brand">
+      <span class="section-anchor"></span>
+      <div class="page">
+        <p class="section-eyebrow">01 — Brand Identity</p>
+        <h2 class="section-title">Logo & Mark</h2>
+        <p class="section-body">The GramWrite logo is a pairing of the wordmark and the living dot — the same dot that appears in the corner of your screen. The dot is the product; the wordmark is the signature.</p>
+
+        <div class="logo-showcase reveal">
+          <div class="logo-cell dark">
+            <div class="logo-lockup">
+              <div class="logo-mark pulse-demo"><div class="logo-mark-inner"></div></div>
+              <div>
+                <div class="logo-text">GramWrite</div>
+                <div class="logo-tagline">The Invisible Editor</div>
+              </div>
+            </div>
+            <div class="logo-cell-label">Primary — Dark</div>
+          </div>
+          <div class="logo-cell mid">
+            <div class="logo-lockup">
+              <div class="logo-mark"><div class="logo-mark-inner"></div></div>
+              <div>
+                <div class="logo-text">GramWrite</div>
+                <div class="logo-tagline">The Invisible Editor</div>
+              </div>
+            </div>
+            <div class="logo-cell-label">On Surface</div>
+          </div>
+          <div class="logo-cell light">
+            <div class="logo-lockup">
+              <div class="logo-mark" style="background:var(--ink)"><div class="logo-mark-inner" style="background:rgba(58,176,120,0.5)"></div></div>
+              <div>
+                <div class="logo-text" style="color:var(--ink)">GramWrite</div>
+                <div class="logo-tagline">The Invisible Editor</div>
+              </div>
+            </div>
+            <div class="logo-cell-label" style="color:#9a9890">Light Background</div>
+          </div>
+        </div>
+
+        <!-- Colour palette -->
+        <h2 class="section-title">Colour Palette</h2>
+        <p class="section-body">A cinematic palette grounded in deep blacks and aged paper, activated by a single green that signals life, attention, and correctness.</p>
+
+        <div class="color-grid reveal">
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#0d0d10"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Ink</div>
+              <div class="swatch-hex">#0d0d10</div>
+            </div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#1a1a24"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Surface</div>
+              <div class="swatch-hex">#1a1a24</div>
+            </div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#3ab078"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Signal Green</div>
+              <div class="swatch-hex">#3ab078</div>
+            </div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#e8e4da"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Aged Paper</div>
+              <div class="swatch-hex">#e8e4da</div>
+            </div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#c9a84c"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Gold</div>
+              <div class="swatch-hex">#c9a84c</div>
+            </div>
+          </div>
+          <div class="color-swatch">
+            <div class="swatch-block" style="background:#e05555"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">Error Red</div>
+              <div class="swatch-hex">#e05555</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typography -->
+        <h2 class="section-title">Typography</h2>
+        <p class="section-body">Three typefaces, each with a distinct role. The serif carries editorial authority. The monospace carries technical precision. The display carries the brand voice at scale.</p>
+
+        <div class="type-specimens reveal">
+          <div class="type-card">
+            <div class="type-label">Display — Bebas Neue</div>
+            <div class="type-specimen-display">GRAMWRITE</div>
+            <div class="type-meta">Used for large-scale brand moments, headlines, and section markers. All caps only. Never in body copy.</div>
+          </div>
+          <div class="type-card">
+            <div class="type-label">Serif — IM Fell English Italic</div>
+            <div class="type-specimen-serif">Write first.<br>Polish never.</div>
+            <div class="type-meta">Used for taglines, section titles, literary copy, and any text that needs warmth or human voice. Italic preferred.</div>
+          </div>
+          <div class="type-card" style="grid-column: 1 / -1;">
+            <div class="type-label">Monospace — Courier Prime</div>
+            <div class="type-specimen-mono">Backend: ollama&nbsp;&nbsp;&nbsp;Model: qwen2.5:0.5b<br>Sensitivity: medium&nbsp;&nbsp;Debounce: 2.0s<br>// No cloud. No accounts. No rewriting.</div>
+            <div class="type-meta">Used for all UI elements, code blocks, labels, navigation, settings, and anywhere text must feel mechanical, precise, or technical. This is the workhorse face of GramWrite.</div>
+          </div>
+        </div>
+
+        <!-- Dot states -->
+        <h2 class="section-title">The Living Dot</h2>
+        <p class="section-body">The dot is the entire UI. It communicates through colour and motion — never through text or popups while you write. Each state has a specific meaning and animation signature.</p>
+
+        <div class="dot-states reveal">
+          <div class="dot-state">
+            <div class="dot-demo idle"></div>
+            <div class="dot-state-name">Idle</div>
+            <div class="dot-state-desc">Waiting. No movement. Dark grey.</div>
+          </div>
+          <div class="dot-state">
+            <div class="dot-demo proc"></div>
+            <div class="dot-state-name">Processing</div>
+            <div class="dot-state-desc">Inference running. Slow pulse. Blue.</div>
+          </div>
+          <div class="dot-state">
+            <div class="dot-demo alert"></div>
+            <div class="dot-state-name">Alert</div>
+            <div class="dot-state-desc">Correction found. Ripple. Green.</div>
+          </div>
+          <div class="dot-state">
+            <div class="dot-demo error"></div>
+            <div class="dot-state-name">Error</div>
+            <div class="dot-state-desc">Backend offline. Static. Red.</div>
+          </div>
+        </div>
+
+        <!-- Voice guidelines -->
+        <h2 class="section-title">Brand Voice</h2>
+        <p class="section-body">GramWrite writes like a screenwriter, not a marketer. Short. Direct. Occasionally poetic. Always in service of the writer's experience.</p>
+
+        <div class="voice-grid reveal">
+          <div class="voice-card good">
+            <div class="voice-label">✓ Do</div>
+            <div class="voice-text">"Write first. Polish never."<br>"Your screenplay stays on your machine."<br>"One small dot. Click when it glows."<br>"GramWrite exists in the background."</div>
+          </div>
+          <div class="voice-card bad">
+            <div class="voice-label">✗ Don't</div>
+            <div class="voice-text">"Powered by cutting-edge AI technology!"<br>"Supercharge your screenwriting workflow."<br>"Our revolutionary grammar engine helps you write better scripts faster."<br>"Sign up for early access today."</div>
+          </div>
+          <div class="voice-card good">
+            <div class="voice-label">✓ Do</div>
+            <div class="voice-text">"No accounts. No telemetry. No cloud."<br>"It knows the difference between a slug and a sentence."<br>"A script doctor in the corner."<br>"The correction waits. You decide."</div>
+          </div>
+          <div class="voice-card bad">
+            <div class="voice-label">✗ Don't</div>
+            <div class="voice-text">"Seamlessly integrates with your existing workflow."<br>"Privacy-first AI-powered writing assistant."<br>"Boost productivity with smart suggestions."<br>"Join thousands of satisfied screenwriters."</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         § 2 — DASHBOARD UI
+    ═══════════════════════════════════════════ -->
+    <section class="doc-section" id="dashboard">
+      <span class="section-anchor"></span>
+      <div class="page">
+        <p class="section-eyebrow">02 — Configuration Dashboard</p>
+        <h2 class="section-title">Settings Interface</h2>
+        <p class="section-body">The dashboard is the secondary experience — accessed only when you want to change something. It must feel like a professional tool, never a product. No upsells. No prompts. Just controls.</p>
+
+        <div class="dashboard-wrapper reveal">
+          <!-- Chrome bar -->
+          <div class="dash-chrome">
+            <div class="chrome-dots">
+              <div class="chrome-dot cd-red"></div>
+              <div class="chrome-dot cd-yellow"></div>
+              <div class="chrome-dot cd-green"></div>
+            </div>
+            <div class="chrome-title">GramWrite — Settings</div>
+          </div>
+
+          <!-- Layout -->
+          <div class="dash-layout">
+
+            <!-- Sidebar -->
+            <aside class="dash-sidebar">
+              <div class="dash-sidebar-logo">
+                <div class="logo-lockup">
+                  <div class="logo-mark" style="width:28px;height:28px"><div class="logo-mark-inner"></div></div>
+                  <div class="logo-text" style="font-size:13px;letter-spacing:2px">GramWrite</div>
+                </div>
+              </div>
+
+              <div class="dash-nav-group">
+                <div class="dash-nav-label">Settings</div>
+                <div class="dash-nav-item active" onclick="switchDashTab('general', this)">
+                  <span class="dash-nav-icon">⚙</span> General
+                </div>
+                <div class="dash-nav-item" onclick="switchDashTab('model', this)">
+                  <span class="dash-nav-icon">◈</span> Model
+                </div>
+                <div class="dash-nav-item" onclick="switchDashTab('appearance', this)">
+                  <span class="dash-nav-icon">◉</span> Appearance
+                </div>
+                <div class="dash-nav-item" onclick="switchDashTab('advanced', this)">
+                  <span class="dash-nav-icon">⌬</span> Advanced
+                </div>
+              </div>
+
+              <div class="dash-nav-group">
+                <div class="dash-nav-label">System</div>
+                <div class="dash-nav-item" onclick="switchDashTab('about', this)">
+                  <span class="dash-nav-icon">◌</span> About
+                </div>
+              </div>
+
+              <div class="dash-status">
+                <div class="dash-status-row">
+                  <div class="status-dot"></div>
+                  <div class="status-label">Ollama · Active</div>
+                </div>
+                <div class="status-detail">qwen2.5:0.5b · 62ms avg</div>
+              </div>
+            </aside>
+
+            <!-- Main panel -->
+            <div class="dash-main">
+              <div class="dash-tabs">
+                <div class="dash-tab active" data-tab="general">General</div>
+                <div class="dash-tab" data-tab="model">Model</div>
+                <div class="dash-tab" data-tab="appearance">Appearance</div>
+                <div class="dash-tab" data-tab="advanced">Advanced</div>
+                <div class="dash-tab" data-tab="about">About</div>
+              </div>
+
+              <!-- General tab -->
+              <div class="dash-panel active" id="dash-general">
+                <div class="settings-grid">
+                  <div class="form-group">
+                    <label class="form-label">LLM Backend</label>
+                    <div class="form-select-wrap">
+                      <select class="form-select">
+                        <option selected>auto (detect)</option>
+                        <option>ollama</option>
+                        <option>lmstudio</option>
+                      </select>
+                    </div>
+                    <div class="form-hint">Auto-detects Ollama (11434) or LM Studio (1234)</div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Debounce (seconds)</label>
+                    <input type="number" class="form-input" value="2.0" min="0.5" max="10" step="0.5">
+                    <div class="form-hint">Wait time after typing stops before analysis</div>
+                  </div>
+
+                  <div class="form-group settings-full">
+                    <label class="form-label">Correction Sensitivity</label>
+                    <div class="sensitivity-row">
+                      <input type="range" class="sensitivity-slider" min="0" max="2" value="1" id="sensSlider">
+                      <div class="sensitivity-val" id="sensVal">Medium</div>
+                    </div>
+                    <div class="form-hint">Low = major errors only · Medium = standard · High = catch everything</div>
+                  </div>
+
+                  <div class="form-group settings-full">
+                    <label class="form-label">Behaviour</label>
+                    <div class="toggle-row">
+                      <div class="toggle-info">
+                        <div class="toggle-name">Watch only supported apps</div>
+                        <div class="toggle-desc">Only monitor Fade In, Final Draft, Highland and known Fountain editors</div>
+                      </div>
+                      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="toggle-row">
+                      <div class="toggle-info">
+                        <div class="toggle-name">Check action lines</div>
+                        <div class="toggle-desc">Light grammar check on action lines — fragments are always preserved</div>
+                      </div>
+                      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="toggle-row">
+                      <div class="toggle-info">
+                        <div class="toggle-name">Launch at login</div>
+                        <div class="toggle-desc">Start GramWrite automatically when you log in</div>
+                      </div>
+                      <div class="toggle" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                  </div>
+                </div>
+                <button class="save-btn" onclick="this.textContent='Saved ✓'; setTimeout(()=>this.textContent='Save Settings',2000)">Save Settings</button>
+              </div>
+
+              <!-- Model tab -->
+              <div class="dash-panel" id="dash-model">
+                <div class="settings-grid">
+                  <div class="form-group settings-full">
+                    <label class="form-label">Model Name</label>
+                    <input type="text" class="form-input" value="qwen2.5:0.5b" placeholder="e.g. qwen2.5:0.5b">
+                    <div class="form-hint">Any model available in your selected backend. Smaller = faster.</div>
+                  </div>
+                  <div class="form-group settings-full">
+                    <label class="form-label">System Prompt</label>
+                    <textarea class="form-textarea" rows="6">You are a Hollywood script doctor.
+Correct grammar and spelling only.
+Do NOT rewrite stylistic fragments.
+Do NOT modify ALL CAPS character names or sluglines.
+Preserve pacing and rhythm of screenplay writing.
+If the text has no errors, respond with exactly: NO_CORRECTION
+If there is an error, respond with ONLY the corrected sentence.</textarea>
+                    <div class="form-hint">This prompt is sent to the LLM with every request. Edit carefully — wrong instructions break screenplay grammar rules.</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Max Context (chars)</label>
+                    <input type="number" class="form-input" value="300" min="50" max="800">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Temperature</label>
+                    <input type="number" class="form-input" value="0.1" min="0" max="1" step="0.05">
+                    <div class="form-hint">Lower = more consistent corrections</div>
+                  </div>
+                </div>
+                <button class="save-btn" onclick="this.textContent='Saved ✓'; setTimeout(()=>this.textContent='Save Settings',2000)">Save Settings</button>
+              </div>
+
+              <!-- Appearance tab -->
+              <div class="dash-panel" id="dash-appearance">
+                <div class="settings-grid">
+                  <div class="form-group">
+                    <label class="form-label">Dot Position</label>
+                    <div class="form-select-wrap">
+                      <select class="form-select">
+                        <option>Bottom Right</option>
+                        <option>Bottom Left</option>
+                        <option>Top Right</option>
+                        <option>Top Left</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Dot Size</label>
+                    <div class="form-select-wrap">
+                      <select class="form-select">
+                        <option>Small (24px)</option>
+                        <option selected>Medium (32px)</option>
+                        <option>Large (40px)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group settings-full">
+                    <label class="form-label">Bubble Width</label>
+                    <input type="number" class="form-input" value="300" min="240" max="500">
+                    <div class="form-hint">Width of the correction suggestion bubble in pixels</div>
+                  </div>
+                </div>
+                <button class="save-btn" onclick="this.textContent='Saved ✓'; setTimeout(()=>this.textContent='Save Settings',2000)">Save Settings</button>
+              </div>
+
+              <!-- Advanced tab -->
+              <div class="dash-panel" id="dash-advanced">
+                <div class="settings-grid">
+                  <div class="form-group">
+                    <label class="form-label">Ollama Host</label>
+                    <input type="text" class="form-input" value="http://localhost:11434">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">LM Studio Host</label>
+                    <input type="text" class="form-input" value="http://localhost:1234">
+                  </div>
+                  <div class="form-group settings-full">
+                    <label class="form-label">Additional Watched Apps</label>
+                    <textarea class="form-textarea" rows="4" placeholder="One app bundle ID or process name per line&#10;e.g. com.example.myapp">com.apple.TextEdit
+com.sublimetext.4</textarea>
+                    <div class="form-hint">Add any Fountain-compatible app not in the default list</div>
+                  </div>
+                </div>
+                <button class="save-btn" onclick="this.textContent='Saved ✓'; setTimeout(()=>this.textContent='Save Settings',2000)">Save Settings</button>
+              </div>
+
+              <!-- About tab -->
+              <div class="dash-panel" id="dash-about">
+                <div style="display:flex;flex-direction:column;gap:28px;max-width:480px;">
+                  <div>
+                    <div class="logo-lockup" style="margin-bottom:16px;">
+                      <div class="logo-mark pulse-demo"><div class="logo-mark-inner"></div></div>
+                      <div>
+                        <div class="logo-text">GramWrite</div>
+                        <div class="logo-tagline">The Invisible Editor for Screenwriters</div>
+                      </div>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-dim);line-height:1.8;">
+                      Version <strong style="color:var(--text)">1.0.0</strong> &nbsp;·&nbsp; MIT License<br>
+                      Built by <strong style="color:var(--text)">Revanth Levaka</strong> — A Polymath &amp; Film Maker<br>
+                      <a href="https://github.com/revanthlevaka/GramWrite" target="_blank" style="color:var(--accent);text-decoration:none;">github.com/revanthlevaka/GramWrite</a>
+                    </div>
+                  </div>
+                  <div style="background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:16px 18px;">
+                    <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">Privacy Pledge</div>
+                    <div style="font-size:12px;color:var(--text-dim);line-height:1.8;">
+                      GramWrite makes zero external network calls.<br>
+                      Your text is never logged, stored, or transmitted.<br>
+                      All inference runs locally on your hardware.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /dash-main -->
+
+          </div><!-- /dash-layout -->
+        </div><!-- /dashboard-wrapper -->
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         § 3 — LIVE GRAMMAR DEMO
+    ═══════════════════════════════════════════ -->
+    <section class="doc-section" id="demo">
+      <span class="section-anchor"></span>
+      <div class="page">
+        <p class="section-eyebrow">03 — Grammar Correction in Use</p>
+        <h2 class="section-title">How It Looks While Writing</h2>
+        <p class="section-body">GramWrite analyses only dialogue and action lines — never sluglines, character names, or transitions. Errors are surfaced as underlines. Hover to see the suggestion. The panel on the right mirrors the floating dot experience.</p>
+
+        <div class="grammar-demo-wrapper reveal">
+          <div class="dash-chrome">
+            <div class="chrome-dots">
+              <div class="chrome-dot cd-red"></div>
+              <div class="chrome-dot cd-yellow"></div>
+              <div class="chrome-dot cd-green"></div>
+            </div>
+            <div class="chrome-title">Fade In Pro — untitled_feature.fountain</div>
+          </div>
+
+          <div class="demo-layout">
+
+            <!-- Left: screenplay editor -->
+            <div class="screenplay-pane">
+              <div class="screenplay-toolbar">
+                <div class="toolbar-title">Screenplay</div>
+                <div class="toolbar-badge">GramWrite Active</div>
+              </div>
+
+              <div class="screenplay-editor">
+                <div class="sc-slugline">INT. COFFEE SHOP — EARLY MORNING</div>
+                <br>
+                <div class="sc-action">
+                  Rain against glass. MAYA, 30s,
+                  <span class="tooltip-anchor">
+                    <span class="err-underline">stare at</span>
+                    <span class="correction-tooltip"><span class="original">stare at</span><span class="fixed">stares at</span> — subject–verb agreement</span>
+                  </span>
+                  a blinking cursor on an empty page.
+                </div>
+                <br>
+                <div class="sc-character">MAYA</div>
+                <div class="sc-dialogue">
+                  I don't know what you want
+                  <span class="tooltip-anchor">
+                    <span class="err-underline">from I.</span>
+                    <span class="correction-tooltip"><span class="original">from I</span><span class="fixed">from me</span> — object pronoun</span>
+                  </span>
+                </div>
+                <br>
+                <div class="sc-character">DANIEL</div>
+                <div class="sc-dialogue">(beat)</div>
+                <div class="sc-dialogue">
+                  <span class="tooltip-anchor">
+                    <span class="err-underline red">Your wrong about that.</span>
+                    <span class="correction-tooltip"><span class="original">Your</span><span class="fixed">You're</span> — contraction vs possessive</span>
+                  </span>
+                </div>
+                <br>
+                <div class="sc-action">
+                  Maya
+                  <span class="tooltip-anchor">
+                    <span class="err-underline">close</span>
+                    <span class="correction-tooltip"><span class="original">close</span><span class="fixed">closes</span> — third person singular</span>
+                  </span>
+                  the laptop. Stands. Doesn't look back.
+                </div>
+                <br>
+                <div class="sc-transition">CUT TO:</div>
+                <br>
+                <div class="sc-slugline">EXT. PARKING LOT — CONTINUOUS</div>
+                <br>
+                <div class="sc-action">She walks fast. Head down. Keys in hand.</div>
+              </div>
+            </div>
+
+            <!-- Right: GramWrite corrections panel -->
+            <div class="gw-panel">
+              <div class="gw-panel-header">
+                <div class="gw-panel-title">✦ GramWrite</div>
+                <div class="gw-dot-live"></div>
+              </div>
+
+              <div class="gw-corrections">
+
+                <div class="correction-card" id="card1">
+                  <span class="cc-type action">Action</span>
+                  <div class="cc-original">"stare at a blinking cursor"</div>
+                  <div class="cc-arrow">↓</div>
+                  <div class="cc-fixed">"stares at a blinking cursor"</div>
+                  <div class="cc-reason">Subject–verb agreement. Maya is singular.</div>
+                  <div class="cc-actions">
+                    <button class="cc-btn apply" onclick="applyCard('card1')">Apply</button>
+                    <button class="cc-btn dismiss" onclick="dismissCard('card1')">Dismiss</button>
+                  </div>
+                </div>
+
+                <div class="correction-card" id="card2">
+                  <span class="cc-type dialogue">Dialogue</span>
+                  <div class="cc-original">"what you want from I"</div>
+                  <div class="cc-arrow">↓</div>
+                  <div class="cc-fixed">"what you want from me"</div>
+                  <div class="cc-reason">Object pronoun — "me" not "I" after prepositions.</div>
+                  <div class="cc-actions">
+                    <button class="cc-btn apply" onclick="applyCard('card2')">Apply</button>
+                    <button class="cc-btn dismiss" onclick="dismissCard('card2')">Dismiss</button>
+                  </div>
+                </div>
+
+                <div class="correction-card" id="card3">
+                  <span class="cc-type dialogue">Dialogue</span>
+                  <div class="cc-original">"Your wrong about that"</div>
+                  <div class="cc-arrow">↓</div>
+                  <div class="cc-fixed">"You're wrong about that"</div>
+                  <div class="cc-reason">Contraction error: "You're" = "You are".</div>
+                  <div class="cc-actions">
+                    <button class="cc-btn apply" onclick="applyCard('card3')">Apply</button>
+                    <button class="cc-btn dismiss" onclick="dismissCard('card3')">Dismiss</button>
+                  </div>
+                </div>
+
+                <div class="correction-card" id="card4">
+                  <span class="cc-type action">Action</span>
+                  <div class="cc-original">"Maya close the laptop"</div>
+                  <div class="cc-arrow">↓</div>
+                  <div class="cc-fixed">"Maya closes the laptop"</div>
+                  <div class="cc-reason">Third-person singular present tense.</div>
+                  <div class="cc-actions">
+                    <button class="cc-btn apply" onclick="applyCard('card4')">Apply</button>
+                    <button class="cc-btn dismiss" onclick="dismissCard('card4')">Dismiss</button>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="gw-panel-footer">
+                <div class="gw-stats">
+                  <strong id="corrCount">4</strong> corrections &nbsp;·&nbsp; avg <strong>62ms</strong><br>
+                  <span id="corrStatus">Ollama · qwen2.5:0.5b</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /demo-layout -->
+        </div><!-- /grammar-demo-wrapper -->
+
+        <p style="font-size:11px;color:var(--text-dim);margin-top:16px;font-style:italic;">
+          Hover underlined text to preview corrections &nbsp;·&nbsp; Click Apply or Dismiss in the panel
+        </p>
+
+        <!-- 3 usage state cards -->
+        <h2 class="section-title" style="margin-top:56px;">Interface States</h2>
+        <p class="section-body">The three moments a writer interacts with GramWrite. Each is designed to be as brief as possible.</p>
+
+        <div class="states-showcase reveal">
+          <div class="state-card">
+            <div class="state-card-header">
+              <div class="mini-dot idle"></div>
+              <div class="state-card-title">Writing — Idle</div>
+            </div>
+            <div class="state-card-body">
+              <p class="state-desc">You're typing. GramWrite sees the keystrokes but stays completely silent. The dot is grey and motionless. The debounce timer hasn't fired. Nothing interrupts your flow.</p>
+            </div>
+          </div>
+          <div class="state-card">
+            <div class="state-card-header">
+              <div class="mini-dot proc"></div>
+              <div class="state-card-title">Pause — Processing</div>
+            </div>
+            <div class="state-card-body">
+              <p class="state-desc">You stopped typing for 2 seconds. The dot pulses blue — quietly indicating it's working. The LLM is running on your machine. In most cases this resolves in under 100ms.</p>
+            </div>
+          </div>
+          <div class="state-card">
+            <div class="state-card-header">
+              <div class="mini-dot alert"></div>
+              <div class="state-card-title">Click — Suggestion</div>
+            </div>
+            <div class="state-card-body">
+              <div class="mini-bubble">
+                <div class="mini-bubble-head">✦ GramWrite</div>
+                <div class="mini-bubble-text">You're wrong about that.</div>
+                <div class="mini-bubble-btns">
+                  <button class="mini-copy-btn">Copy</button>
+                  <button class="mini-dismiss-btn">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         § 4 — SPECS
+    ═══════════════════════════════════════════ -->
+    <section class="doc-section" id="specs">
+      <span class="section-anchor"></span>
+      <div class="page">
+        <p class="section-eyebrow">04 — Technical Specifications</p>
+        <h2 class="section-title">System Specs</h2>
+        <p class="section-body">Hard constraints for every version of GramWrite. These are not goals — they are requirements.</p>
+
+        <table class="spec-table reveal">
+          <thead>
+            <tr><th>Specification</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Inference target</td><td>&lt; 100ms on qwen2.5:0.5b with Ollama running locally</td></tr>
+            <tr><td>Text extracted per check</td><td>Maximum <code>300</code> characters (configurable)</td></tr>
+            <tr><td>Debounce window</td><td><code>2.0s</code> default — fires after typing inactivity</td></tr>
+            <tr><td>Network calls</td><td>Localhost only — <code>127.0.0.1:11434</code> or <code>:1234</code></td></tr>
+            <tr><td>External requests</td><td>Zero</td></tr>
+            <tr><td>Memory footprint</td><td>~60MB Python process + model VRAM (GPU) or RAM (CPU)</td></tr>
+            <tr><td>Python version</td><td>3.10 or higher</td></tr>
+            <tr><td>UI framework</td><td>PyQt6 (cross-platform native windows)</td></tr>
+            <tr><td>Supported backends</td><td>Ollama ≥ 0.1, LM Studio ≥ 0.2 (OpenAI-compatible)</td></tr>
+            <tr><td>Recommended model</td><td><code>qwen2.5:0.5b</code> — 400MB, ~50–80ms inference</td></tr>
+          </tbody>
+        </table>
+
+        <h2 class="section-title" style="margin-top:48px;">Fountain Parser Rules</h2>
+        <table class="spec-table reveal">
+          <thead>
+            <tr><th>Element</th><th>Detected as</th><th>Grammar check?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>INT. OFFICE - DAY</code></td><td>Slugline</td><td>Never — structural element</td></tr>
+            <tr><td><code>JOHN</code> (all caps, short)</td><td>Character name</td><td>Never — proper noun</td></tr>
+            <tr><td><code>(beat)</code> / <code>(quietly)</code></td><td>Parenthetical</td><td>Never — direction, not prose</td></tr>
+            <tr><td><code>CUT TO:</code> / <code>FADE IN:</code></td><td>Transition</td><td>Never — keyword</td></tr>
+            <tr><td>Action paragraph</td><td>Action line</td><td>Light check — fragments preserved</td></tr>
+            <tr><td>Post-character prose</td><td>Dialogue</td><td>Full check — standard grammar applies</td></tr>
+          </tbody>
+        </table>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="brand-footer">
+    <div class="page">
+      <div class="bf-inner">
+        <div>
+          <p class="bf-tagline">Write first. Polish never.</p>
+          <p class="bf-credit">
+            Built by <strong>Revanth Levaka</strong> — A Polymath &amp; Film Maker<br>
+            <a href="https://github.com/revanthlevaka/GramWrite" target="_blank" rel="noopener">github.com/revanthlevaka/GramWrite</a>
+          </p>
+        </div>
+        <div class="bf-links">
+          <div class="bf-links-row">
+            <a href="index.html">← Home</a>
+            <span>·</span>
+            <a href="https://github.com/revanthlevaka/GramWrite" target="_blank" rel="noopener">GitHub ↗</a>
+            <span>·</span>
+            <span>MIT License</span>
+            <span>·</span>
+            <span>v1.0.0</span>
+          </div>
+          <span style="font-size:9px;letter-spacing:1px;color:#3a3a46;">gramwrite.revanthlevaka.com/brand.html</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ── Reveal on scroll ──────────────────────────────────────
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 60);
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.07, rootMargin: '0px 0px -32px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // ── Dashboard sidebar nav ─────────────────────────────────
+    function switchDashTab(tab, navItem) {
+      document.querySelectorAll('.dash-nav-item').forEach(i => i.classList.remove('active'));
+      navItem.classList.add('active');
+      document.querySelectorAll('.dash-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+      document.querySelectorAll('.dash-panel').forEach(p => {
+        p.classList.toggle('active', p.id === 'dash-' + tab);
+      });
+    }
+
+    // ── Dashboard tab clicks ──────────────────────────────────
+    document.querySelectorAll('.dash-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const t = tab.dataset.tab;
+        document.querySelectorAll('.dash-tab').forEach(x => x.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.dash-panel').forEach(p => {
+          p.classList.toggle('active', p.id === 'dash-' + t);
+        });
+        // sync sidebar
+        document.querySelectorAll('.dash-nav-item').forEach(n => {
+          n.classList.toggle('active', n.textContent.trim().toLowerCase() === t);
+        });
+      });
+    });
+
+    // ── Sensitivity slider ────────────────────────────────────
+    const slider = document.getElementById('sensSlider');
+    const sensVal = document.getElementById('sensVal');
+    const labels = ['Low', 'Medium', 'High'];
+    if (slider) {
+      slider.addEventListener('input', () => {
+        sensVal.textContent = labels[slider.value];
+      });
+    }
+
+    // ── Correction cards ──────────────────────────────────────
+    let remaining = 4;
+    function applyCard(id) {
+      const card = document.getElementById(id);
+      card.classList.add('applied');
+      card.querySelector('.cc-actions').innerHTML = '<span style="font-size:10px;color:var(--accent);letter-spacing:1px;">✓ Applied</span>';
+      remaining--;
+      updateCount();
+    }
+    function dismissCard(id) {
+      const card = document.getElementById(id);
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(16px)';
+      card.style.transition = 'all 0.3s ease';
+      setTimeout(() => card.remove(), 300);
+      remaining--;
+      updateCount();
+    }
+    function updateCount() {
+      const el = document.getElementById('corrCount');
+      if (el) el.textContent = remaining;
+      const status = document.getElementById('corrStatus');
+      if (remaining === 0 && status) {
+        status.textContent = 'All corrections resolved ✓';
+        status.style.color = 'var(--accent)';
+      }
+    }
+
+    // ── Top nav active state on scroll ────────────────────────
+    const sections = document.querySelectorAll('.doc-section');
+    const navLinks = document.querySelectorAll('.topnav-links a');
+    const scrollObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          navLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id);
+          });
+        }
+      });
+    }, { threshold: 0.35 });
+    sections.forEach(s => scrollObs.observe(s));
+  </script>
+
+</body>
+</html>
