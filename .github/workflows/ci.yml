@@ -28,12 +28,13 @@ jobs:
         # We need Qt dependencies for headless testing in linux
         sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 x11-utils
         pip install -r requirements-dev.txt
+        pip install -e .
         
     - name: Test with pytest
       env:
         QT_QPA_PLATFORM: offscreen
       run: |
-        pytest tests/
+        python -m pytest tests/
 
   security:
     runs-on: ubuntu-latest
