@@ -17,6 +17,7 @@ from typing import Callable, Optional
 from .engine import GramEngine, CorrectionResult
 from .fountain_parser import FountainParser, ParsedBlock, FountainElement
 from .watcher import Watcher
+from .heuristics import calculate_confidence, generate_diff_html, enforce_present_tense
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +28,19 @@ class PipelineResult:
     text: str
     parsed: ParsedBlock
     correction: Optional[CorrectionResult]
+    final_suggestion: Optional[str] = None
+    has_final_suggestion: bool = False
+    confidence: str = "LOW"
+    diff_html: str = ""
     timestamp: float = field(default_factory=time.monotonic)
 
     @property
     def has_suggestion(self) -> bool:
-        return (
-            self.correction is not None
-            and self.correction.has_correction
-            and self.correction.correction is not None
-        )
+        return self.has_final_suggestion
 
     @property
     def suggestion(self) -> Optional[str]:
-        if self.correction:
-            return self.correction.correction
-        return None
+        return self.final_suggestion
 
     @property
     def latency_ms(self) -> float:
@@ -80,6 +79,7 @@ class Controller:
         self._queue: asyncio.Queue[str] = asyncio.Queue(maxsize=1)
         self._worker_task: Optional[asyncio.Task] = None
 
+        self._strict_mode = config.get("strict_mode", True)
         sensitivity = config.get("sensitivity", "medium")
         self._min_length = {"low": 30, "medium": 15, "high": 5}.get(sensitivity, 15)
 
@@ -153,27 +153,60 @@ class Controller:
                     parsed.should_check,
                 )
 
+                # Apply strict mode
+                if self._strict_mode and parsed.element not in (FountainElement.ACTION, FountainElement.DIALOGUE):
+                    parsed.should_check = False
+                    parsed.reason = "Strict mode — skipped"
+
                 correction: Optional[CorrectionResult] = None
+                final_suggestion: Optional[str] = None
+                has_final_suggestion = False
+                confidence = "LOW"
+                diff_html = ""
 
                 if parsed.should_check and parsed.text:
-                    # Build context-aware prompt
-                    prompt_text = self._build_prompt(parsed)
+                    text_to_check = parsed.text
+                    # 1. Action Line Heuristics
+                    if parsed.element == FountainElement.ACTION:
+                        text_to_check, heuristic_conf = enforce_present_tense(text_to_check)
+                        if text_to_check != parsed.text:
+                            confidence = heuristic_conf
+                            
+                    # 2. Build context-aware prompt
+                    prompt_text = self._build_prompt(parsed.element, text_to_check)
                     correction = await self._engine.correct(prompt_text)
 
                     if correction.error:
                         logger.warning("Engine error: %s", correction.error)
-                    elif correction.has_correction:
-                        logger.info(
-                            "Correction found (%.0fms): %r → %r",
-                            correction.latency_ms,
-                            parsed.text[:60],
-                            correction.correction,
-                        )
+                    
+                    # 3. Determine final suggestion
+                    if correction.has_correction and correction.correction is not None:
+                        final_suggestion = correction.correction
+                        has_final_suggestion = True
+                        calc_conf = calculate_confidence(parsed.text, final_suggestion)
+                        # Promote confidence if LLM did a major fix, otherwise keep heuristic
+                        if confidence == "LOW" or calc_conf == "HIGH":
+                            confidence = calc_conf
+                            
+                        logger.info("Correction found (%.0fms): %r → %r", correction.latency_ms, parsed.text[:60], final_suggestion)
+                    elif text_to_check != parsed.text:
+                        # LLM didn't suggest more changes, but our heuristic did
+                        final_suggestion = text_to_check
+                        has_final_suggestion = True
+                        logger.info("Heuristic correction applied: %r → %r", parsed.text[:60], final_suggestion)
+
+                    # 4. Generate Diff HTML
+                    if has_final_suggestion and final_suggestion:
+                        diff_html = generate_diff_html(parsed.text, final_suggestion)
 
                 result = PipelineResult(
                     text=text,
                     parsed=parsed,
                     correction=correction,
+                    final_suggestion=final_suggestion,
+                    has_final_suggestion=has_final_suggestion,
+                    confidence=confidence,
+                    diff_html=diff_html
                 )
 
                 # Emit to UI (always, so UI can update idle state)
@@ -190,19 +223,19 @@ class Controller:
                 except ValueError:
                     pass
 
-    def _build_prompt(self, parsed: ParsedBlock) -> str:
+    def _build_prompt(self, element: FountainElement, text: str) -> str:
         """
         Build context-appropriate prompt for the engine.
         Action lines get a different instruction prefix.
         """
-        if parsed.element == FountainElement.DIALOGUE:
-            return parsed.text
-        elif parsed.element == FountainElement.ACTION:
+        if element == FountainElement.DIALOGUE:
+            return text
+        elif element == FountainElement.ACTION:
             # Action lines: be extra lenient about fragments
             return (
-                f"[ACTION LINE — stylistic fragments are intentional]\n{parsed.text}"
+                f"[ACTION LINE — stylistic fragments are intentional]\n{text}"
             )
-        return parsed.text
+        return text
 
     def notify_window_changed(self):
         """
@@ -215,7 +248,7 @@ class Controller:
 
     @staticmethod
     def _hash(text: str) -> str:
-        return hashlib.md5(text.encode()).hexdigest()
+        return hashlib.sha256(text.encode()).hexdigest()
 
     @property
     def is_processing(self) -> bool:

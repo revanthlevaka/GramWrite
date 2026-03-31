@@ -13,6 +13,15 @@ No rewriting your voice.
 
 ---
 
+## What's New in v1.2
+- **Inline Word-Level Diffs**: Suggestions now highlight exactly which words changed using color-coded text.
+- **Confidence Indicators**: Every suggestion includes a built-in confidence score (HIGH/MEDIUM/LOW) visually mapped to a color indicator near the header.
+- **Strict Screenplay Mode**: Configurable strict mode guarantees elements like character names, parentheticals, and sluglines are 100% ignored.
+- **Present Tense Enforcement**: GramWrite heuristically detects past tense action lines and attempts to convert them to present tense.
+- **Multilingual Support**: The underlying LLM is now instructed to detect the original language and correct it directly without translating.
+
+---
+
 ## Why GramWrite Exists
 
 Most writing tools are built for essays.

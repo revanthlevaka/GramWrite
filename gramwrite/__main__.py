@@ -82,7 +82,7 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version="GramWrite 1.1.0",
+        version="GramWrite 1.2.0",
     )
     parser.add_argument(
         "--port",

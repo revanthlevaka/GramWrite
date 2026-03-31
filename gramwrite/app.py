@@ -65,7 +65,7 @@ C_COPY_BTN = QColor(50, 180, 120)
 
 
 class SignalBridge(QObject):
-    correction_ready = pyqtSignal(str, str)   # original, correction
+    correction_ready = pyqtSignal(str, str, str, str)   # original, correction, confidence, diff_html
     state_changed = pyqtSignal(str)           # idle | processing | alert | error
     backend_status = pyqtSignal(str)          # status message
 
@@ -94,6 +94,8 @@ class FloatingDot(QWidget):
         self._bubble: Optional[SuggestionBubble] = None
         self._current_suggestion: Optional[str] = None
         self._current_original: Optional[str] = None
+        self._current_confidence: str = "LOW"
+        self._current_diff_html: str = ""
 
         self._init_window()
         self._init_pulse_timer()
@@ -229,9 +231,11 @@ class FloatingDot(QWidget):
             self._color = QColor(C_ERROR)
         self.update()
 
-    def _on_correction_ready(self, original: str, correction: str):
+    def _on_correction_ready(self, original: str, correction: str, confidence: str, diff_html: str):
         self._current_original = original
         self._current_suggestion = correction
+        self._current_confidence = confidence
+        self._current_diff_html = diff_html
         self._on_state_changed("alert")
 
     # ── Mouse ─────────────────────────────────────────────────────────────────
@@ -264,7 +268,9 @@ class FloatingDot(QWidget):
                 self._bubble = SuggestionBubble(self._bridge)
             self._bubble.set_content(
                 self._current_original or "",
-                self._current_suggestion
+                self._current_suggestion,
+                self._current_confidence,
+                self._current_diff_html
             )
             # Position bubble above dot
             dot_pos = self.mapToGlobal(QPoint(0, 0))
@@ -325,14 +331,29 @@ class SuggestionBubble(QWidget):
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(10)
 
-        # Header
+        # Header with Confidence
+        header_layout = QHBoxLayout()
         header = QLabel("✦ GramWrite")
         header.setFont(QFont("Courier New", 9))
         header.setStyleSheet("color: rgba(120,120,130,200); letter-spacing: 2px;")
-        layout.addWidget(header)
+        
+        self._conf_dot = QLabel("●")
+        self._conf_dot.setFont(QFont("Courier New", 10))
+        
+        self._conf_label = QLabel("LOW")
+        self._conf_label.setFont(QFont("Courier New", 9))
+        self._conf_label.setStyleSheet("color: rgba(120,120,130,200);")
+        
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        header_layout.addWidget(self._conf_dot)
+        header_layout.addWidget(self._conf_label)
+        
+        layout.addLayout(header_layout)
 
         # Correction text
         self._correction_label = QLabel("")
+        self._correction_label.setTextFormat(Qt.TextFormat.RichText)
         self._correction_label.setFont(QFont("Georgia", 11))
         self._correction_label.setStyleSheet("color: rgba(230, 230, 235, 255); line-height: 1.5;")
         self._correction_label.setWordWrap(True)
@@ -397,12 +418,25 @@ class SuggestionBubble(QWidget):
         shadow.setOffset(0, 4)
         self._container.setGraphicsEffect(shadow)
 
-    def set_content(self, original: str, correction: str):
+    def set_content(self, original: str, correction: str, confidence: str, diff_html: str):
         self._correction = correction
-        display = correction
-        if len(display) > 160:
-            display = display[:157] + "…"
-        self._correction_label.setText(display)
+        
+        if diff_html:
+            self._correction_label.setText(diff_html)
+        else:
+            display = correction
+            if len(display) > 160:
+                display = display[:157] + "…"
+            self._correction_label.setText(display)
+
+        self._conf_label.setText(confidence)
+        if confidence == "HIGH":
+            self._conf_dot.setStyleSheet("color: #4CAF50;")
+        elif confidence == "MEDIUM":
+            self._conf_dot.setStyleSheet("color: #FFC107;")
+        else:
+            self._conf_dot.setStyleSheet("color: #787882;")
+            
         self.adjustSize()
 
     def _copy_to_clipboard(self):
@@ -430,6 +464,7 @@ class AsyncWorkerThread(QThread):
 
     def run(self):
         from .controller import Controller, PipelineResult
+        from .web_dashboard import WebDashboard
 
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
@@ -439,6 +474,8 @@ class AsyncWorkerThread(QThread):
                 self._bridge.correction_ready.emit(
                     result.parsed.text,
                     result.suggestion,
+                    result.confidence,
+                    result.diff_html
                 )
                 self._bridge.state_changed.emit("alert")
             elif result.parsed.should_check:
@@ -449,8 +486,21 @@ class AsyncWorkerThread(QThread):
 
         self._controller = Controller(self._config, on_result)
 
+        # Start Web Dashboard
+        port = self._config.get("dashboard_port", 7878)
+        self._web = WebDashboard(self._config, self._controller.engine)
+        
+        async def main_loop():
+            # Start web server as a concurrent task
+            web_task = asyncio.create_task(self._web.start(port))
+            # Start the main controller (blocks until stopped)
+            await self._controller.start()
+            # If controller stops, cancel web server
+            web_task.cancel()
+            await self._web.stop()
+
         try:
-            self._loop.run_until_complete(self._controller.start())
+            self._loop.run_until_complete(main_loop())
         except Exception as e:
             logger.exception("AsyncWorkerThread error: %s", e)
             self._bridge.state_changed.emit("error")
@@ -459,6 +509,10 @@ class AsyncWorkerThread(QThread):
         if self._controller and self._loop:
             asyncio.run_coroutine_threadsafe(
                 self._controller.stop(), self._loop
+            )
+        if hasattr(self, "_web") and self._loop:
+            asyncio.run_coroutine_threadsafe(
+                self._web.stop(), self._loop
             )
 
 
@@ -473,6 +527,26 @@ def run_app(config: dict, show_dashboard: bool = False):
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("GramWrite")
+    app.setApplicationDisplayName("GramWrite")
+
+    # Set application icon
+    try:
+        from pathlib import Path
+        from PyQt6.QtGui import QIcon
+
+        # Try to find the icon file
+        icon_paths = [
+            Path(__file__).parent / "static" / "icon.png",  # Package static
+            Path.cwd() / "gramwrite" / "static" / "icon.png",  # CWD relative
+            Path.cwd() / "assets" / "icon" / "icon.png",  # Assets folder
+        ]
+
+        for icon_path in icon_paths:
+            if icon_path.exists():
+                app.setWindowIcon(QIcon(str(icon_path)))
+                break
+    except (ImportError, OSError) as exc:
+        logger.debug("Skipping optional app icon setup: %s", exc)
 
     bridge = SignalBridge()
     engine = GramEngine(config)

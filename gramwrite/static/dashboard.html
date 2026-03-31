@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GramWrite Dashboard</title>
+    <link rel="icon" type="image/png" href="/icon.png">
+    <style>
+        :root {
+            --ink: #0d0d10;
+            --ink-2: #13131a;
+            --ink-3: #1a1a24;
+            --paper: #e8e4da;
+            --accent: #3ab078;
+            --accent-dim: rgba(58, 176, 120, 0.12);
+            --text: #c8c4bc;
+            --text-dim: #5a5860;
+            --serif: 'Georgia', serif;
+            --mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--ink);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--paper);
+            font-size: 18px;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+
+        .card {
+            background-color: var(--ink-2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section-label {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        select, input, textarea {
+            background-color: var(--ink-3);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        select:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: bold;
+            padding: 12px 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #48c88a;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-refresh {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            font-size: 10px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent);
+        }
+
+        .status-pill {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        .hidden { display: none; }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GramWrite</h1>
+            <div class="subtitle">The Invisible Editor Settings</div>
+        </header>
+
+        <div class="card">
+            <div class="control-group">
+                <label class="section-label">LLM Backend</label>
+                <select id="backend">
+                    <option value="auto">Auto-detect</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="lmstudio">LM Studio</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="section-label">Active Model</label>
+                <div class="row">
+                    <input type="text" id="model" placeholder="qwen3.5:0.8b">
+                    <button class="btn btn-refresh" id="refresh-models">Refresh</button>
+                </div>
+                <select id="model-list" class="hidden" style="margin-top: 8px;"></select>
+            </div>
+
+            <div class="control-group">
+                <label class="section-label">Correction Sensitivity</label>
+                <div class="slider-container">
+                    <input type="range" id="sensitivity" min="0" max="2" step="1">
+                    <span id="sensitivity-label">Medium</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label class="section-label">Strict Screenplay Mode</label>
+                <div class="row">
+                    <input type="checkbox" id="strict_mode" style="width: auto;">
+                    <span style="font-size: 11px; color: var(--text-dim);">Ignore non-Action/Dialogue blocks</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="control-group">
+                <label class="section-label">System Prompt</label>
+                <textarea id="system_prompt"></textarea>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn" id="save-btn">Save Settings</button>
+        </div>
+
+        <footer>
+            GramWrite v1.2.0 &middot; Localhost Dashboard
+        </footer>
+    </div>
+
+    <script>
+        const sensitivityLabels = ["Low", "Medium", "High"];
+        const sensitivityMap = {0: "low", 1: "medium", 2: "high"};
+        const sensitivityReverse = {"low": 0, "medium": 1, "high": 2};
+
+        async function loadConfig() {
+            try {
+                const resp = await fetch('/api/config');
+                const config = await resp.json();
+                
+                document.getElementById('backend').value = config.backend || 'auto';
+                document.getElementById('model').value = config.model || '';
+                document.getElementById('system_prompt').value = config.system_prompt || '';
+                document.getElementById('strict_mode').checked = !!config.strict_mode;
+                
+                const sensVal = sensitivityReverse[config.sensitivity] ?? 1;
+                document.getElementById('sensitivity').value = sensVal;
+                document.getElementById('sensitivity-label').innerText = sensitivityLabels[sensVal];
+            } catch (err) {
+                console.error("Failed to load config:", err);
+            }
+        }
+
+        async function saveConfig() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.innerText = "Saving...";
+            
+            const config = {
+                backend: document.getElementById('backend').value,
+                model: document.getElementById('model').value,
+                sensitivity: sensitivityMap[document.getElementById('sensitivity').value],
+                system_prompt: document.getElementById('system_prompt').value,
+                strict_mode: document.getElementById('strict_mode').checked
+            };
+
+            try {
+                const resp = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                if (resp.ok) {
+                    saveBtn.innerText = "Saved ✓";
+                    setTimeout(() => saveBtn.innerText = "Save Settings", 2000);
+                } else {
+                    saveBtn.innerText = "Error Saving";
+                    setTimeout(() => saveBtn.innerText = "Save Settings", 2000);
+                }
+            } catch (err) {
+                console.error("Failed to save config:", err);
+                saveBtn.innerText = "Error Saving";
+            }
+        }
+
+        async function refreshModels() {
+            const btn = document.getElementById('refresh-models');
+            const modelList = document.getElementById('model-list');
+            const modelInput = document.getElementById('model');
+            
+            btn.innerText = "...";
+            try {
+                const resp = await fetch('/api/models');
+                const models = await resp.json();
+                
+                if (models && models.length > 0) {
+                    modelList.innerHTML = '';
+                    models.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.innerText = m;
+                        modelList.appendChild(opt);
+                    });
+                    modelList.classList.remove('hidden');
+                    modelList.onchange = (e) => modelInput.value = e.target.value;
+                }
+            } catch (err) {
+                console.error("Failed to fetch models:", err);
+            }
+            btn.innerText = "Refresh";
+        }
+
+        document.getElementById('sensitivity').oninput = (e) => {
+            document.getElementById('sensitivity-label').innerText = sensitivityLabels[e.target.value];
+        };
+
+        document.getElementById('save-btn').onclick = saveConfig;
+        document.getElementById('refresh-models').onclick = refreshModels;
+
+        window.onload = loadConfig;
+    </script>
+</body>
+</html>

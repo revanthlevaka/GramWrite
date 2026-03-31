@@ -27,7 +27,7 @@ head() { echo -e "\n${BOLD}$*${RESET}"; }
 # ── Banner ─────────────────────────────────────────────────────────────────────
 echo -e "${DIM}"
 echo "  ┌─────────────────────────────────────────┐"
-echo "  │  G R A M W R I T E   v1.1.0             │"
+echo "  │  G R A M W R I T E   v1.2.0             │"
 echo "  │  The Invisible Editor for Screenwriters  │"
 echo "  └─────────────────────────────────────────┘"
 echo -e "${RESET}"

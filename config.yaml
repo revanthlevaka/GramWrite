@@ -37,3 +37,7 @@ system_prompt: |
   Preserve pacing and rhythm of screenplay writing.
   If the text has no errors, respond with exactly: NO_CORRECTION
   If there is an error, respond with ONLY the corrected sentence. Do not explain.
+
+# strict_mode: true | false
+#   If true, process ONLY Dialogue and Action lines. Ignore Sluglines, Character names, Transitions, Parentheticals.
+strict_mode: true
