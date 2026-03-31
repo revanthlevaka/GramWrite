@@ -74,8 +74,30 @@
       display: flex; align-items: center; justify-content: space-between;
       height: 52px;
     }
-    .topnav-logo { font-family: var(--mono); font-size: 11px; letter-spacing: 4px; color: var(--text-dim); text-transform: uppercase; text-decoration: none; }
-    .topnav-logo span { color: var(--accent); }
+    .topnav-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .topnav-logo .logo-mark {
+      width: 14px;
+      height: 14px;
+    }
+    .topnav-logo .logo-mark-inner {
+      width: 4px;
+      height: 4px;
+      background: rgba(0,0,0,0.38);
+    }
+    .topnav-logo-word {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .topnav-logo:hover .topnav-logo-word { color: var(--text); }
     .topnav-links { display: flex; gap: 4px; }
     .topnav-links a {
       font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
@@ -642,7 +664,10 @@
 
   <!-- TOP NAV -->
   <nav class="topnav">
-    <a class="topnav-logo" href="index.html">Gram<span>Write</span></a>
+    <a class="topnav-logo" href="index.html">
+      <span class="logo-mark"><span class="logo-mark-inner"></span></span>
+      <span class="topnav-logo-word">GramWrite</span>
+    </a>
     <div class="topnav-links">
       <a href="#brand">Brand</a>
       <a href="#dashboard">Dashboard</a>

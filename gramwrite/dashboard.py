@@ -139,6 +139,14 @@ class DashboardWindow(QWidget):
                 font-size: 10px;
             }
             QPushButton#refresh-btn:hover { background: #1a1a24; }
+            QFrame#logo-mark {
+                background: #3ab078;
+                border-radius: 14px;
+            }
+            QFrame#logo-mark-inner {
+                background: rgba(0,0,0,0.38);
+                border-radius: 4px;
+            }
             QFrame#divider {
                 background: rgba(255,255,255,0.07);
                 max-height: 1px;
@@ -151,13 +159,39 @@ class DashboardWindow(QWidget):
         layout.setSpacing(6)
 
         # Title
+        logo_lockup = QFrame()
+        logo_layout = QHBoxLayout(logo_lockup)
+        logo_layout.setContentsMargins(0, 0, 0, 0)
+        logo_layout.setSpacing(12)
+
+        logo_mark = QFrame()
+        logo_mark.setObjectName("logo-mark")
+        logo_mark.setFixedSize(28, 28)
+        logo_mark_layout = QVBoxLayout(logo_mark)
+        logo_mark_layout.setContentsMargins(0, 0, 0, 0)
+        logo_mark_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        logo_mark_inner = QFrame()
+        logo_mark_inner.setObjectName("logo-mark-inner")
+        logo_mark_inner.setFixedSize(8, 8)
+        logo_mark_layout.addWidget(logo_mark_inner)
+
+        logo_copy = QVBoxLayout()
+        logo_copy.setContentsMargins(0, 0, 0, 0)
+        logo_copy.setSpacing(4)
+
         title = QLabel("GRAMWRITE")
         title.setFont(QFont("Courier Prime", 14, QFont.Weight.Bold))
-        title.setStyleSheet("color: #e8e4da; font-size: 14px; letter-spacing: 4px; margin-bottom: 4px;")
+        title.setStyleSheet("color: #e8e4da; font-size: 14px; letter-spacing: 4px; margin-top: 0;")
         subtitle = QLabel("The Invisible Editor")
         subtitle.setStyleSheet("color: #5a5860; font-size: 10px; letter-spacing: 2px; text-transform: none; margin-top: 0;")
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        logo_copy.addWidget(title)
+        logo_copy.addWidget(subtitle)
+
+        logo_layout.addWidget(logo_mark, 0, Qt.AlignmentFlag.AlignTop)
+        logo_layout.addLayout(logo_copy)
+        logo_layout.addStretch()
+        layout.addWidget(logo_lockup)
 
         layout.addWidget(self._divider())
 

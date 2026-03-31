@@ -39,6 +39,30 @@
             margin-bottom: 40px;
         }
 
+        .brand-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-mark-inner {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.38);
+        }
+
         h1 {
             color: var(--paper);
             font-size: 18px;
@@ -167,8 +191,13 @@
 <body>
     <div class="container">
         <header>
-            <h1>GramWrite</h1>
-            <div class="subtitle">The Invisible Editor Settings</div>
+            <div class="brand-lockup">
+                <div class="brand-mark"><div class="brand-mark-inner"></div></div>
+                <div class="brand-copy">
+                    <h1>GramWrite</h1>
+                    <div class="subtitle">The Invisible Editor</div>
+                </div>
+            </div>
         </header>
 
         <div class="card">

@@ -106,12 +106,41 @@
     }
 
     .nav-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo-mark {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-mark-inner {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.38);
+    }
+
+    .nav-logo-word {
       font-family: var(--mono);
       font-size: 11px;
       letter-spacing: 4px;
       color: var(--text-dim);
       text-transform: uppercase;
-      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-logo:hover .nav-logo-word {
+      color: var(--text);
     }
 
     .nav-links {
@@ -754,7 +783,10 @@
 <body>
 
   <nav>
-    <a class="nav-logo" href="#">GramWrite</a>
+    <a class="nav-logo" href="#">
+      <span class="nav-logo-mark"><span class="nav-logo-mark-inner"></span></span>
+      <span class="nav-logo-word">GramWrite</span>
+    </a>
     <ul class="nav-links">
       <li><a href="#philosophy">Philosophy</a></li>
       <li><a href="#how">How it works</a></li>
