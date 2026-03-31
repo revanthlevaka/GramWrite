@@ -63,9 +63,9 @@ The interface is a dot. That is intentional. Software that respects your attenti
 
 ## The Rules We Enforce on Ourselves
 
-1. **Never rewrite.** Grammar and spelling only. Nothing else.
+1. **Never rewrite.** Grammar, spelling, and screenplay tense only. Nothing else. Action lines that slip into the past tense are corrected to the present — but the voice remains yours.
 
-2. **Never interrupt.** The tool speaks only when spoken to. No popups. No badges. No notifications. Only a glow.
+2. **Never interrupt.** The tool speaks only when spoken to. No popups. No badges. No notifications. Only a gentle glow. And when you do click, a transparent confidence score tells you exactly how sure it is.
 
 3. **Never leak.** Zero network calls to external servers. Zero telemetry. Zero accounts. The architecture enforces the privacy pledge — it is not a setting.
 
@@ -112,6 +112,6 @@ That's exactly right.
 
 ---
 
-*GramWrite v1.1.0*
+*GramWrite v1.2.0*
 *MIT License*
 *Local-first. Writer-first. Always.*

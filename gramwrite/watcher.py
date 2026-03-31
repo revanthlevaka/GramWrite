@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 # Supported app bundle IDs / process names
 SUPPORTED_APPS = {
     "macos": [
-        "com.generalkaos.fadein",          # Fade In
+        "com.generalcoffee.fadein",         # Fade In (Primary)
+        "com.generalkaos.fadein",          # Fade In (Legacy/Alternate)
         "com.screenplay.finaldraft",         # Final Draft
         "com.quoteunquoteapps.highland2",   # Highland 2
         "com.neilsardesai.coppice",          # Fountain editors (misc)
@@ -208,8 +209,8 @@ class WindowsExtractor(TextExtractor):
                     tp = focused.GetTextPattern()
                     doc_range = tp.DocumentRange
                     return doc_range.GetText(MAX_EXTRACT_CHARS)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("extract_focused_text text pattern error: %s", e)
 
             return None
         except Exception as e:
@@ -240,8 +241,8 @@ class LinuxExtractor(TextExtractor):
 
     async def get_active_app(self) -> Optional[str]:
         try:
-            import subprocess
-            result = subprocess.run(
+            import subprocess  # nosec B404
+            result = subprocess.run(  # nosec B603 B607
                 ["xdotool", "getactivewindow", "getwindowname"],
                 capture_output=True, text=True, timeout=2
             )
@@ -276,16 +277,16 @@ class LinuxExtractor(TextExtractor):
         Intrusive — only used if AT-SPI unavailable.
         """
         try:
-            import subprocess
+            import subprocess  # nosec B404
             # Get selection via xclip
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["xclip", "-o", "-selection", "primary"],
                 capture_output=True, text=True, timeout=2
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()[-MAX_EXTRACT_CHARS:]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("clipboard fallback error: %s", e)
         return None
 
 
@@ -322,6 +323,7 @@ class Watcher:
         self._last_change_time: float = 0.0
         self._pending_task: Optional[asyncio.Task] = None
         self._running = False
+        self._fired = False
 
     def _build_extractor(self) -> TextExtractor:
         sys = platform.system()

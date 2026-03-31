@@ -1,30 +1,4 @@
-# GramWrite — Python Dependencies
-# ─────────────────────────────────────────────
-
-# Core async HTTP (LLM backend calls)
-aiohttp>=3.9.0
-
-# Qt UI framework
-PyQt6>=6.6.0
-
-# Config parsing
-PyYAML>=6.0
-
-# ─── Platform-specific (install manually based on OS) ─────────────────────────
-
-# macOS — Accessibility API
-# pip install pyobjc-framework-Cocoa pyobjc-framework-ApplicationServices
-# (Uncomment on macOS):
-# pyobjc-framework-Cocoa>=10.0
-# pyobjc-framework-ApplicationServices>=10.0
-
-# Windows — UI Automation
-# pip install uiautomation psutil
-# (Uncomment on Windows):
-# uiautomation>=2.0.18
-# psutil>=5.9.0
-
-# Linux — AT-SPI2
-# pip install pyatspi
-# (Uncomment on Linux):
-# pyatspi>=2.46.0
+PyQt6==6.7.1
+PyYAML==6.0.2
+requests==2.33.0
+aiohttp>=3.10.0

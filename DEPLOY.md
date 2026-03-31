@@ -11,7 +11,7 @@ git branch -M main
 
 # Add all files
 git add .
-git commit -m "feat: GramWrite v1.1.0 — initial release"
+git commit -m "feat: GramWrite v1.2.0 — initial release"
 
 # Create repo on GitHub (requires gh CLI)
 gh repo create gramwrite --public --description "The Invisible Editor for Screenwriters" --push
@@ -27,12 +27,12 @@ git push -u origin main
 
 ```bash
 # Tag the release
-git tag -a v1.1.0 -m "GramWrite v1.1.0 — initial release"
-git push origin v1.1.0
+git tag -a v1.2.0 -m "GramWrite v1.2.0 — initial release"
+git push origin v1.2.0
 
 # Create release with gh CLI
-gh release create v1.1.0 \
-  --title "GramWrite v1.1.0" \
+gh release create v1.2.0 \
+  --title "GramWrite v1.2.0" \
   --notes-file MANIFESTO.md \
   --latest
 ```
