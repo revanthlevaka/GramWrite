@@ -2,6 +2,12 @@
 app.py — GramWrite Floating UI
 Minimal, always-on-top draggable icon with suggestion bubble.
 Built with PyQt6.
+
+Provides:
+- FloatingDot: Small, unobtrusive status indicator (bottom-right corner)
+- SuggestionBubble: Correction popup with accept/reject/copy actions
+- SignalBridge: Thread-safe communication between async controller and Qt
+- AsyncWorkerThread: Background event loop for grammar pipeline
 """
 
 from __future__ import annotations
@@ -29,11 +35,14 @@ from PyQt6.QtGui import (
     QColor,
     QFont,
     QGuiApplication,
+    QKeyEvent,
     QMouseEvent,
     QPainter,
     QPainterPath,
     QPixmap,
     QRadialGradient,
+    QKeySequence,
+    QShortcut,
 )
 from PyQt6.QtWidgets import (
     QApplication,
@@ -59,12 +68,26 @@ C_BORDER = QColor(60, 60, 70)
 C_TEXT_PRIMARY = QColor(230, 230, 235)
 C_TEXT_DIM = QColor(120, 120, 130)
 C_COPY_BTN = QColor(50, 180, 120)
+C_ACCEPT_BTN = QColor(50, 180, 120)
+C_REJECT_BTN = QColor(180, 70, 60)
 
 
 # ─── Signals bridge (Controller → Qt main thread) ────────────────────────────
 
 
 class SignalBridge(QObject):
+    """
+    Thread-safe signal bridge between the async grammar pipeline and Qt main thread.
+
+    Signals:
+        correction_ready: Emitted when a grammar suggestion is available.
+            Args: original, correction, confidence, diff_html, element_type
+        state_changed: Emitted when the app state changes.
+            Args: state string (idle | processing | alert | error)
+        backend_status: Emitted with backend status messages.
+            Args: status message string
+    """
+
     correction_ready = pyqtSignal(str, str, str, str, str)   # original, correction, confidence, diff_html, element_type
     state_changed = pyqtSignal(str)           # idle | processing | alert | error
     backend_status = pyqtSignal(str)          # status message
@@ -75,13 +98,18 @@ class SignalBridge(QObject):
 
 class FloatingDot(QWidget):
     """
-    The primary GramWrite icon.
-    A small coloured dot that lives in the corner.
-    Draggable. Click to show/hide suggestion bubble.
-    Right-click for Settings / Quit context menu.
+    The primary GramWrite icon — a small coloured dot in the screen corner.
+
+    Features:
+    - Draggable via mouse
+    - Left-click toggles suggestion bubble
+    - Right-click opens context menu (Settings, Always on Top, Quit)
+    - Animated pulse during processing/alert states
+    - Always-on-top by default, toggleable
     """
 
     open_settings = pyqtSignal()  # emitted when user picks «Settings» from menu
+    always_on_top_toggled = pyqtSignal(bool)  # emitted when always-on-top state changes
 
     def __init__(self, bridge: SignalBridge, size: int = 28):
         super().__init__(None)
@@ -97,13 +125,17 @@ class FloatingDot(QWidget):
         self._current_confidence: str = "LOW"
         self._current_diff_html: str = ""
         self._current_element_type: str = "dialogue"
+        self._always_on_top = True
+        self._state = "idle"
 
         self._init_window()
         self._init_pulse_timer()
         self._connect_signals()
         self._init_context_menu()
+        self._init_keyboard_shortcuts()
 
     def _init_window(self):
+        """Configure window flags, position, and visual effects."""
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
@@ -129,15 +161,18 @@ class FloatingDot(QWidget):
         self.setGraphicsEffect(shadow)
 
     def _init_pulse_timer(self):
+        """Start the 20fps pulse animation timer."""
         self._pulse_timer = QTimer(self)
         self._pulse_timer.timeout.connect(self._tick_pulse)
         self._pulse_timer.start(50)  # 20fps pulse
 
     def _connect_signals(self):
+        """Connect bridge signals to local handlers."""
         self._bridge.correction_ready.connect(self._on_correction_ready)
         self._bridge.state_changed.connect(self._on_state_changed)
 
     def _init_context_menu(self):
+        """Build the right-click context menu with Settings, Always on Top, and Quit."""
         self._ctx_menu = QMenu()
         self._ctx_menu.setStyleSheet("""
             QMenu {
@@ -169,16 +204,54 @@ class FloatingDot(QWidget):
 
         self._ctx_menu.addSeparator()
 
+        self._always_on_top_action = QAction("📌  Always on Top", self)
+        self._always_on_top_action.setCheckable(True)
+        self._always_on_top_action.setChecked(self._always_on_top)
+        self._always_on_top_action.triggered.connect(self._toggle_always_on_top)
+        self._ctx_menu.addAction(self._always_on_top_action)
+
+        self._ctx_menu.addSeparator()
+
         quit_action = QAction("✕  Quit GramWrite", self)
         quit_action.triggered.connect(QApplication.quit)
         self._ctx_menu.addAction(quit_action)
 
+    def _init_keyboard_shortcuts(self):
+        """Register keyboard shortcuts for quick actions."""
+        # Ctrl+Shift+G: Toggle suggestion bubble
+        self._toggle_shortcut = QShortcut(QKeySequence("Ctrl+Shift+G"), self)
+        self._toggle_shortcut.activated.connect(self._toggle_bubble)
+
+        # Ctrl+Shift+S: Open settings
+        self._settings_shortcut = QShortcut(QKeySequence("Ctrl+Shift+S"), self)
+        self._settings_shortcut.activated.connect(self.open_settings.emit)
+
+    def _toggle_always_on_top(self, checked: bool):
+        """Toggle the always-on-top window flag."""
+        self._always_on_top = checked
+        self.always_on_top_toggled.emit(checked)
+        # Re-apply window flags
+        flags = (
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.Tool
+        )
+        if checked:
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        if hasattr(Qt.WidgetAttribute, "WA_MacAlwaysShowToolWindow"):
+            self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
+        self.show()
+
     def contextMenuEvent(self, event):
+        """Show context menu on right-click."""
         self._ctx_menu.exec(event.globalPos())
 
     # ── Paint ─────────────────────────────────────────────────────────────────
 
     def paintEvent(self, _):
+        """Render the dot with glow and pulse effects."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -209,6 +282,7 @@ class FloatingDot(QWidget):
         painter.end()
 
     def _tick_pulse(self):
+        """Update pulse animation based on current state."""
         state = getattr(self, "_state", "idle")
         if state == "processing":
             self._pulse_alpha += self._pulse_direction * 8
@@ -225,6 +299,7 @@ class FloatingDot(QWidget):
     # ── State ─────────────────────────────────────────────────────────────────
 
     def _on_state_changed(self, state: str):
+        """Handle state transitions with colour updates."""
         self._state = state
         if state == "idle":
             self._color = QColor(C_IDLE)
@@ -237,6 +312,7 @@ class FloatingDot(QWidget):
         self.update()
 
     def _on_correction_ready(self, original: str, correction: str, confidence: str, diff_html: str, element_type: str):
+        """Store new suggestion and transition to alert state."""
         self._current_original = original
         self._current_suggestion = correction
         self._current_confidence = confidence
@@ -247,11 +323,13 @@ class FloatingDot(QWidget):
     # ── Mouse ─────────────────────────────────────────────────────────────────
 
     def mousePressEvent(self, event: QMouseEvent):
+        """Begin drag on left-click."""
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        """End drag or register click if no movement."""
         if event.button() == Qt.MouseButton.LeftButton:
             delta = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             if self._drag_pos and (delta - self._drag_pos).manhattanLength() < 5:
@@ -260,11 +338,13 @@ class FloatingDot(QWidget):
             self._drag_pos = None
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        """Move window during drag."""
         if self._drag_pos and event.buttons() == Qt.MouseButton.LeftButton:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
 
     def _toggle_bubble(self):
+        """Show or hide the suggestion bubble."""
         if self._bubble and self._bubble.isVisible():
             self._bubble.hide()
             return
@@ -272,6 +352,9 @@ class FloatingDot(QWidget):
         if self._current_suggestion:
             if not self._bubble:
                 self._bubble = SuggestionBubble(self._bridge)
+                # Connect accept/reject signals
+                self._bubble.suggestion_accepted.connect(self._on_suggestion_accepted)
+                self._bubble.suggestion_rejected.connect(self._on_suggestion_rejected)
             self._bubble.set_content(
                 self._current_original or "",
                 self._current_suggestion,
@@ -292,15 +375,36 @@ class FloatingDot(QWidget):
             # No suggestion — show status dot with no-error pulse
             self._on_state_changed("idle")
 
+    def _on_suggestion_accepted(self, correction: str):
+        """Handle accepted suggestion — dismiss bubble and return to idle."""
+        self._on_state_changed("idle")
+
+    def _on_suggestion_rejected(self):
+        """Handle rejected suggestion — dismiss bubble and return to idle."""
+        self._on_state_changed("idle")
+
 
 # ─── Suggestion Bubble ────────────────────────────────────────────────────────
 
 
 class SuggestionBubble(QWidget):
     """
-    Brand-aligned correction popup.
-    Shows original vs corrected text, confidence, and copy/dismiss actions.
+    Brand-aligned correction popup with accept/reject/copy actions.
+
+    Displays:
+    - Original text (red, italic)
+    - Corrected text (green)
+    - Confidence badge and element type badge
+    - Accept (applies correction), Reject (dismisses), Copy buttons
+
+    Keyboard shortcuts:
+    - Enter: Accept suggestion
+    - Escape: Reject/dismiss
+    - Ctrl+C: Copy corrected text
     """
+
+    suggestion_accepted = pyqtSignal(str)   # emitted with corrected text
+    suggestion_rejected = pyqtSignal()      # emitted when user dismisses
 
     def __init__(self, bridge: SignalBridge):
         super().__init__(None)
@@ -316,12 +420,28 @@ class SuggestionBubble(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         if hasattr(Qt.WidgetAttribute, "WA_MacAlwaysShowToolWindow"):
             self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
-        self.setFixedWidth(300)
+        self.setFixedWidth(320)
 
         self._build_ui()
         self._apply_shadow()
+        self._init_keyboard_shortcuts()
+
+    def _init_keyboard_shortcuts(self):
+        """Register keyboard shortcuts for accept/reject/copy actions."""
+        # Enter: Accept suggestion
+        self._accept_shortcut = QShortcut(QKeySequence("Return"), self)
+        self._accept_shortcut.activated.connect(self._on_accept)
+
+        # Escape: Reject/dismiss
+        self._reject_shortcut = QShortcut(QKeySequence("Escape"), self)
+        self._reject_shortcut.activated.connect(self._on_reject)
+
+        # Ctrl+C: Copy corrected text
+        self._copy_shortcut = QShortcut(QKeySequence("Ctrl+C"), self)
+        self._copy_shortcut.activated.connect(self._copy_to_clipboard)
 
     def _build_ui(self):
+        """Construct the bubble layout with all UI elements."""
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -375,7 +495,7 @@ class SuggestionBubble(QWidget):
         self._original_label.setFont(QFont("Georgia", 11))
         self._original_label.setStyleSheet("color: rgba(224, 85, 85, 255); font-style: italic; line-height: 1.5;")
         self._original_label.setWordWrap(True)
-        self._original_label.setMaximumWidth(268)
+        self._original_label.setMaximumWidth(288)
         layout.addWidget(self._original_label)
 
         arrow = QLabel("↓")
@@ -388,14 +508,14 @@ class SuggestionBubble(QWidget):
         self._correction_label.setFont(QFont("Georgia", 11))
         self._correction_label.setStyleSheet("color: rgba(58, 176, 120, 255); line-height: 1.5;")
         self._correction_label.setWordWrap(True)
-        self._correction_label.setMaximumWidth(268)
+        self._correction_label.setMaximumWidth(288)
         layout.addWidget(self._correction_label)
 
         self._reason_label = QLabel("")
         self._reason_label.setFont(QFont("Courier New", 9))
         self._reason_label.setStyleSheet("color: rgba(120,120,130,200); line-height: 1.5;")
         self._reason_label.setWordWrap(True)
-        self._reason_label.setMaximumWidth(268)
+        self._reason_label.setMaximumWidth(288)
         layout.addWidget(self._reason_label)
 
         # Divider
@@ -404,28 +524,33 @@ class SuggestionBubble(QWidget):
         divider.setStyleSheet("background: rgba(60,60,70,180);")
         layout.addWidget(divider)
 
-        # Bottom bar
+        # Bottom bar with Reject, Accept, Copy
         bottom = QHBoxLayout()
         bottom.setSpacing(8)
 
-        self._dismiss_btn = QPushButton("Dismiss")
-        self._dismiss_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._dismiss_btn.setStyleSheet("""
+        self._reject_btn = QPushButton("Reject")
+        self._reject_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._reject_btn.setStyleSheet("""
             QPushButton {
                 background: transparent;
-                color: rgba(120,120,130,200);
-                border: none;
+                color: rgba(180, 70, 60, 200);
+                border: 1px solid rgba(180, 70, 60, 120);
+                border-radius: 6px;
                 font-family: 'Courier New';
                 font-size: 10px;
-                padding: 4px 8px;
+                padding: 5px 12px;
+                letter-spacing: 1px;
             }
-            QPushButton:hover { color: rgba(200,200,210,255); }
+            QPushButton:hover {
+                background: rgba(180, 70, 60, 40);
+                color: rgba(220, 90, 80, 255);
+            }
         """)
-        self._dismiss_btn.clicked.connect(self.hide)
+        self._reject_btn.clicked.connect(self._on_reject)
 
-        self._copy_btn = QPushButton("Copy suggestion")
-        self._copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._copy_btn.setStyleSheet("""
+        self._accept_btn = QPushButton("Accept")
+        self._accept_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._accept_btn.setStyleSheet("""
             QPushButton {
                 background: rgba(50, 180, 120, 220);
                 color: white;
@@ -440,16 +565,38 @@ class SuggestionBubble(QWidget):
             QPushButton:hover { background: rgba(60, 200, 135, 255); }
             QPushButton:pressed { background: rgba(40, 160, 100, 255); }
         """)
+        self._accept_btn.clicked.connect(self._on_accept)
+
+        self._copy_btn = QPushButton("Copy")
+        self._copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._copy_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: rgba(120,120,130,200);
+                border: 1px solid rgba(120,120,130,100);
+                border-radius: 6px;
+                font-family: 'Courier New';
+                font-size: 10px;
+                padding: 5px 12px;
+                letter-spacing: 1px;
+            }
+            QPushButton:hover {
+                background: rgba(120,120,130,40);
+                color: rgba(200,200,210,255);
+            }
+        """)
         self._copy_btn.clicked.connect(self._copy_to_clipboard)
 
-        bottom.addWidget(self._dismiss_btn)
+        bottom.addWidget(self._reject_btn)
         bottom.addStretch()
+        bottom.addWidget(self._accept_btn)
         bottom.addWidget(self._copy_btn)
         layout.addLayout(bottom)
 
         root.addWidget(self._container)
 
     def _apply_shadow(self):
+        """Apply drop shadow effect to the bubble container."""
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
         shadow.setColor(QColor(0, 0, 0, 160))
@@ -457,6 +604,16 @@ class SuggestionBubble(QWidget):
         self._container.setGraphicsEffect(shadow)
 
     def set_content(self, original: str, correction: str, confidence: str, diff_html: str, element_type: str):
+        """
+        Populate the bubble with suggestion data.
+
+        Args:
+            original: The original text with potential errors.
+            correction: The corrected text suggestion.
+            confidence: Confidence level (HIGH, MEDIUM, LOW).
+            diff_html: HTML diff representation (reserved for future use).
+            element_type: Screenplay element type (dialogue, action, etc.).
+        """
         self._correction = correction
 
         original_display = original
@@ -498,14 +655,25 @@ class SuggestionBubble(QWidget):
             self._conf_dot.setStyleSheet("color: #FFC107;")
         else:
             self._conf_dot.setStyleSheet("color: #787882;")
-            
+
         self.adjustSize()
 
+    def _on_accept(self):
+        """Handle accept action — emit signal and dismiss."""
+        self.suggestion_accepted.emit(self._correction)
+        self.hide()
+
+    def _on_reject(self):
+        """Handle reject action — emit signal and dismiss."""
+        self.suggestion_rejected.emit()
+        self.hide()
+
     def _copy_to_clipboard(self):
+        """Copy corrected text to system clipboard."""
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(self._correction)
         self._copy_btn.setText("Copied ✓")
-        QTimer.singleShot(1500, lambda: self._copy_btn.setText("Copy suggestion"))
+        QTimer.singleShot(1500, lambda: self._copy_btn.setText("Copy"))
 
 
 # ─── Async bridge thread ─────────────────────────────────────────────────────
@@ -525,6 +693,7 @@ class AsyncWorkerThread(QThread):
         self._controller = None
 
     def run(self):
+        """Start the async event loop with controller and web dashboard."""
         from .controller import Controller, PipelineResult
         from .web_dashboard import WebDashboard
 
@@ -567,7 +736,7 @@ class AsyncWorkerThread(QThread):
             self._controller.engine,
             on_update=lambda updated: asyncio.create_task(self._controller.apply_config(updated)),
         )
-        
+
         async def main_loop():
             # Start web server as a concurrent task
             web_task = asyncio.create_task(self._web.start(port))
@@ -584,6 +753,7 @@ class AsyncWorkerThread(QThread):
             self._bridge.state_changed.emit("error")
 
     def stop(self):
+        """Gracefully stop the controller and web dashboard."""
         if self._controller and self._loop:
             asyncio.run_coroutine_threadsafe(
                 self._controller.stop(), self._loop
@@ -594,6 +764,7 @@ class AsyncWorkerThread(QThread):
             )
 
     def apply_config(self, config: dict):
+        """Apply updated configuration to the running controller."""
         updated_config = dict(config)
         self._config.clear()
         self._config.update(updated_config)
@@ -607,7 +778,13 @@ class AsyncWorkerThread(QThread):
 
 
 def run_app(config: dict, show_dashboard: bool = False):
-    """Launch the GramWrite floating UI."""
+    """
+    Launch the GramWrite floating UI application.
+
+    Args:
+        config: Application configuration dictionary.
+        show_dashboard: If True, open the settings dashboard on startup.
+    """
     from .engine import GramEngine
     from .dashboard import DashboardWindow
 
@@ -645,6 +822,7 @@ def run_app(config: dict, show_dashboard: bool = False):
     dashboard = DashboardWindow(config, engine)
 
     def _center_window(window: QWidget):
+        """Center a window on the primary screen."""
         screen = QGuiApplication.primaryScreen()
         if not screen:
             return
@@ -654,6 +832,7 @@ def run_app(config: dict, show_dashboard: bool = False):
         window.move(frame.topLeft())
 
     def _show_dashboard():
+        """Show and activate the settings dashboard."""
         _center_window(dashboard)
         dashboard.showNormal()
         dashboard.show()
@@ -674,6 +853,7 @@ def run_app(config: dict, show_dashboard: bool = False):
     bridge.state_changed.emit("idle")
 
     def on_quit():
+        """Clean up worker thread on application quit."""
         worker.stop()
         worker.wait(3000)
 

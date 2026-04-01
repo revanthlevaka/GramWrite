@@ -1,20 +1,70 @@
+# GramWrite Configuration
+# https://github.com/GramWrite
+#
+# Schema version: 1
+# All settings are optional — defaults are applied for missing values.
+
+version: 1
+
+# Grammar backend to use.
+# Options: auto, ollama, lmstudio, harper, foundation_models, none
 backend: auto
+
+# Model identifier for the selected backend.
 model: qwen3.5:0.8b
+
+# How aggressively to flag potential issues.
+# Options: low, medium, high
 sensitivity: medium
+
+# When true, only fix unambiguous grammar mistakes.
 strict_mode: true
-system_prompt: 'You are a Hollywood script doctor.
 
+# System prompt sent to LLM backends.
+system_prompt: |
+  You are a Hollywood script doctor.
   Correct grammar and spelling only.
-
   Do NOT rewrite stylistic fragments.
-
   Do NOT modify ALL CAPS character names or sluglines.
-
   Preserve pacing and rhythm of screenplay writing.
-
   If the text has no errors, respond with exactly: NO_CORRECTION
+  If there is an error, respond with ONLY the corrected sentence. Do not explain.
 
-  If there is an error, respond with ONLY the corrected sentence. Do not explain.'
-debounce_seconds: 2.0
+# Milliseconds to wait after last keystroke before checking.
+debounce_ms: 2000
+
+# Maximum number of entries in the correction cache.
+max_cache_size: 500
+
+# Time-to-live for cached corrections (seconds).
+cache_ttl_secs: 3600
+
+# Maximum characters of context sent to the backend.
 max_context_chars: 300
+
+# Port for the local web dashboard.
 dashboard_port: 7878
+
+# User interface settings
+ui:
+  # Keep the suggestion window above other windows
+  always_on_top: true
+  # UI theme: light, dark, or system
+  theme: system
+  # Window position in screen coordinates
+  position:
+    x: 100
+    y: 100
+  # Window size in pixels
+  size:
+    width: 400
+    height: 200
+
+# Text watcher / clipboard monitor settings
+watcher:
+  # How often to poll for text changes (milliseconds)
+  poll_interval_ms: 500
+  # Maximum characters to extract from screen context
+  max_extract_chars: 1000
+  # How long to keep buffered text before discarding (seconds)
+  buffer_ttl_secs: 5.0

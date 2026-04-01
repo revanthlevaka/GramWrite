@@ -421,6 +421,21 @@
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .suggestion-card.processing {
+            animation: pulse 1.5s ease-in-out infinite;
         }
 
         .suggestion-header {
@@ -508,6 +523,56 @@
             font-size: 11px;
             text-align: center;
             padding: 32px 0;
+        }
+
+        .suggestion-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .suggestion-btn {
+            padding: 6px 14px;
+            border-radius: 5px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            transition: background 0.15s, transform 0.15s;
+        }
+
+        .suggestion-btn:hover { transform: translateY(-1px); }
+
+        .suggestion-btn.accept {
+            background: var(--accent);
+            color: white;
+        }
+
+        .suggestion-btn.accept:hover { background: var(--accent-2); }
+
+        .suggestion-btn.reject {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid rgba(224, 85, 85, 0.3);
+        }
+
+        .suggestion-btn.reject:hover {
+            background: rgba(224, 85, 85, 0.1);
+        }
+
+        .suggestion-btn.copy {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .suggestion-btn.copy:hover {
+            background: var(--ink-4);
+            color: var(--text);
         }
 
         footer {
@@ -989,9 +1054,10 @@
             document.getElementById("sensitivity-label").innerText = sensitivityLabels[e.target.value];
         });
 
-        // ─── Suggestion Polling ──────────────────────────────────────────────
+        // ─── Suggestion Polling / SSE ──────────────────────────────────────────
 
         let lastSuggestionHash = "";
+        let sseConnection = null;
 
         function renderSuggestion(data) {
             const feed = document.getElementById("suggestion-feed");
@@ -1024,14 +1090,103 @@
                     <div class="suggestion-original">"${escapeHtml(data.original || "")}"</div>
                     <div class="suggestion-arrow">↓</div>
                     <div class="suggestion-corrected">"${escapeHtml(data.correction || "")}"</div>
+                    <div class="suggestion-actions">
+                        <button class="suggestion-btn reject" onclick="rejectSuggestion()">Reject</button>
+                        <button class="suggestion-btn accept" onclick="acceptSuggestion()">Accept</button>
+                        <button class="suggestion-btn copy" onclick="copySuggestion()">Copy</button>
+                    </div>
                 </div>
             `;
+        }
+
+        function acceptSuggestion() {
+            // Visual feedback — in a full implementation this would apply the correction
+            const card = document.querySelector('.suggestion-card');
+            if (card) {
+                card.style.borderColor = 'var(--accent)';
+                card.style.background = 'rgba(58, 176, 120, 0.08)';
+                setTimeout(() => {
+                    renderSuggestion({has_suggestion: false});
+                }, 500);
+            }
+        }
+
+        function rejectSuggestion() {
+            // Visual feedback — dismiss the suggestion
+            const card = document.querySelector('.suggestion-card');
+            if (card) {
+                card.style.borderColor = 'var(--red)';
+                card.style.opacity = '0.5';
+                setTimeout(() => {
+                    renderSuggestion({has_suggestion: false});
+                }, 500);
+            }
+        }
+
+        function copySuggestion() {
+            const corrected = document.querySelector('.suggestion-corrected');
+            if (corrected) {
+                const text = corrected.textContent.replace(/^"|"$/g, '');
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = document.querySelector('.suggestion-btn.copy');
+                    if (btn) {
+                        btn.textContent = 'Copied ✓';
+                        setTimeout(() => btn.textContent = 'Copy', 1500);
+                    }
+                });
+            }
         }
 
         function escapeHtml(text) {
             const div = document.createElement("div");
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ─── SSE Connection with Polling Fallback ─────────────────────────────
+
+        function connectSSE() {
+            if (typeof EventSource === 'undefined') {
+                console.log("SSE not supported, falling back to polling");
+                startPolling();
+                return;
+            }
+
+            try {
+                sseConnection = new EventSource('/api/suggestions/stream');
+                
+                sseConnection.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        const hash = JSON.stringify(data);
+                        if (hash !== lastSuggestionHash) {
+                            lastSuggestionHash = hash;
+                            renderSuggestion(data);
+                        }
+                    } catch (e) {
+                        // Ignore parse errors for ping comments
+                    }
+                };
+
+                sseConnection.onerror = function() {
+                    console.log("SSE connection failed, falling back to polling");
+                    if (sseConnection) {
+                        sseConnection.close();
+                        sseConnection = null;
+                    }
+                    startPolling();
+                };
+
+                console.log("SSE connection established for real-time updates");
+            } catch (e) {
+                console.log("SSE connection error, falling back to polling");
+                startPolling();
+            }
+        }
+
+        function startPolling() {
+            setInterval(pollSuggestion, 2000);
+            pollSuggestion();
         }
 
         async function pollSuggestion() {
@@ -1048,8 +1203,8 @@
             }
         }
 
-        setInterval(pollSuggestion, 2000);
-        pollSuggestion();
+        // Initialize: prefer SSE, fallback to polling
+        connectSSE();
 
         window.onload = loadConfig;
     </script>

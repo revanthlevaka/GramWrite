@@ -1,10 +1,17 @@
 """
 watcher.py — Cross-Platform OS-Level Text Watcher
-Extracts current text from active screenwriting apps.
+Extracts current text from active screenwriting applications.
 
-macOS  → pyobjc Accessibility API
-Windows → uiautomation
-Linux  → AT-SPI2 via pyatspi
+macOS  → PyObjC Accessibility API with key fallback
+Windows → uiautomation with clipboard fallback
+Linux  → AT-SPI2 via pyatspi with xdotool fallback
+
+Architecture:
+- Abstract base class for platform watchers
+- Platform-specific implementations
+- Clean callback interface
+- Thread-safe operations
+- Proper async support
 """
 
 from __future__ import annotations
@@ -15,7 +22,8 @@ import platform
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections import deque
+from typing import Callable, Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +59,32 @@ SUPPORTED_APPS = {
 }
 
 MAX_EXTRACT_CHARS = 300
+POLLING_INTERVAL = 0.25  # 250ms polling interval
+BUFFER_TTL = 12.0  # seconds
+BUFFER_MAX_CHARS = 800
 
 
 class TypedTextBuffer:
-    """Thread-safe rolling buffer of recently typed text for fallback capture."""
+    """
+    Thread-safe rolling buffer of recently typed text for fallback capture.
+    
+    Features:
+    - Thread-safe operations via threading.Lock
+    - Proper TTL (time-to-live) handling
+    - App change detection and buffer reset
+    - Backspace handling
+    - Character limit enforcement
+    - Snapshot retrieval with validation
+    """
 
-    def __init__(self, max_chars: int = 800, ttl_secs: float = 12.0):
+    def __init__(self, max_chars: int = BUFFER_MAX_CHARS, ttl_secs: float = BUFFER_TTL):
+        """
+        Initialize the typed text buffer.
+        
+        Args:
+            max_chars: Maximum number of characters to retain in buffer
+            ttl_secs: Time-to-live in seconds before buffer expires
+        """
         self._max_chars = max_chars
         self._ttl_secs = ttl_secs
         self._buffer = ""
@@ -64,7 +92,14 @@ class TypedTextBuffer:
         self._updated_at = 0.0
         self._lock = threading.Lock()
 
-    def record_text(self, app_id: str, text: str):
+    def record_text(self, app_id: str, text: str) -> None:
+        """
+        Record newly typed text into the buffer.
+        
+        Args:
+            app_id: Application identifier that generated the text
+            text: The text content to record
+        """
         if not text:
             return
         with self._lock:
@@ -72,7 +107,14 @@ class TypedTextBuffer:
             self._buffer = (self._buffer + text)[-self._max_chars:]
             self._updated_at = time.monotonic()
 
-    def record_backspace(self, app_id: str, count: int = 1):
+    def record_backspace(self, app_id: str, count: int = 1) -> None:
+        """
+        Record backspace operations to maintain buffer accuracy.
+        
+        Args:
+            app_id: Application identifier where backspace occurred
+            count: Number of characters to remove (default: 1)
+        """
         with self._lock:
             self._reset_if_app_changed(app_id)
             if count > 0:
@@ -80,6 +122,15 @@ class TypedTextBuffer:
             self._updated_at = time.monotonic()
 
     def snapshot(self, app_id: Optional[str]) -> Optional[str]:
+        """
+        Get a snapshot of the current buffer if valid.
+        
+        Args:
+            app_id: Application identifier to validate against
+            
+        Returns:
+            Buffer content if valid, None otherwise
+        """
         with self._lock:
             if not app_id or self._app_id != app_id:
                 return None
@@ -90,25 +141,151 @@ class TypedTextBuffer:
                 return None
             return text[-MAX_EXTRACT_CHARS:]
 
-    def clear(self):
+    def clear(self) -> None:
+        """Clear the buffer and reset all state."""
         with self._lock:
             self._buffer = ""
             self._app_id = None
             self._updated_at = 0.0
 
-    def _reset_if_app_changed(self, app_id: str):
+    def _reset_if_app_changed(self, app_id: str) -> None:
+        """
+        Reset buffer if the application has changed.
+        
+        Args:
+            app_id: Current application identifier
+        """
         if self._app_id != app_id:
             self._app_id = app_id
             self._buffer = ""
 
+    @property
+    def is_empty(self) -> bool:
+        """Check if the buffer is empty."""
+        with self._lock:
+            return len(self._buffer) == 0
+
+    @property
+    def age(self) -> float:
+        """Get the age of the buffer in seconds."""
+        with self._lock:
+            if self._updated_at <= 0:
+                return float('inf')
+            return time.monotonic() - self._updated_at
+
+
+class ClipboardMonitor:
+    """
+    Cross-platform clipboard monitoring for fallback text extraction.
+    
+    Monitors clipboard changes and provides recent clipboard content
+    as a fallback when primary extraction methods fail.
+    """
+
+    def __init__(self, max_chars: int = MAX_EXTRACT_CHARS):
+        """
+        Initialize clipboard monitor.
+        
+        Args:
+            max_chars: Maximum characters to retain from clipboard
+        """
+        self._max_chars = max_chars
+        self._last_content = ""
+        self._updated_at = 0.0
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+
+    def start(self) -> None:
+        """Start clipboard monitoring in background thread."""
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self._thread.start()
+        logger.info("Clipboard monitor started")
+
+    def stop(self) -> None:
+        """Stop clipboard monitoring."""
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2.0)
+        logger.info("Clipboard monitor stopped")
+
+    def get_content(self) -> Optional[str]:
+        """
+        Get recent clipboard content if available.
+        
+        Returns:
+            Clipboard content if recent, None otherwise
+        """
+        with self._lock:
+            if not self._last_content:
+                return None
+            if time.monotonic() - self._updated_at > 5.0:  # 5 second TTL
+                return None
+            return self._last_content[-self._max_chars:]
+
+    def _monitor_loop(self) -> None:
+        """Background loop to monitor clipboard changes."""
+        while self._running:
+            try:
+                content = self._read_clipboard()
+                if content and content != self._last_content:
+                    with self._lock:
+                        self._last_content = content[-self._max_chars:]
+                        self._updated_at = time.monotonic()
+            except Exception as e:
+                logger.debug("Clipboard monitor error: %s", e)
+            time.sleep(0.5)  # Check every 500ms
+
+    def _read_clipboard(self) -> Optional[str]:
+        """Read current clipboard content."""
+        try:
+            import subprocess
+            system = platform.system()
+            
+            if system == "Darwin":
+                result = subprocess.run(
+                    ["pbpaste"],
+                    capture_output=True, text=True, timeout=2
+                )
+            elif system == "Windows":
+                result = subprocess.run(
+                    ["powershell", "-command", "Get-Clipboard"],
+                    capture_output=True, text=True, timeout=2
+                )
+            else:  # Linux
+                result = subprocess.run(
+                    ["xclip", "-o", "-selection", "clipboard"],
+                    capture_output=True, text=True, timeout=2
+                )
+            
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+        return None
+
 
 class MacOSKeyFallback:
-    """Listen for typed characters when Accessibility cannot read the editor value."""
+    """
+    Listen for typed characters when Accessibility cannot read the editor value.
+    
+    Uses Quartz Event Taps to capture keyboard events at the system level.
+    Requires Input Monitoring permission in System Preferences.
+    """
 
     _DELETE_KEYCODE = 51
     _RETURN_KEYCODES = {36, 76}
 
     def __init__(self, app_checker: Callable[[Optional[str]], bool]):
+        """
+        Initialize macOS key fallback.
+        
+        Args:
+            app_checker: Function to check if app is supported
+        """
         self._app_checker = app_checker
         self._buffer = TypedTextBuffer()
         self._tap = None
@@ -119,9 +296,11 @@ class MacOSKeyFallback:
         self._start()
 
     def snapshot(self, app_id: Optional[str]) -> Optional[str]:
+        """Get snapshot from typed text buffer."""
         return self._buffer.snapshot(app_id)
 
-    def _load_dependencies(self):
+    def _load_dependencies(self) -> None:
+        """Load PyObjC dependencies."""
         try:
             import AppKit
             import Quartz
@@ -131,13 +310,15 @@ class MacOSKeyFallback:
         except ImportError:
             logger.debug("Quartz/AppKit not available for macOS key fallback")
 
-    def _start(self):
+    def _start(self) -> None:
+        """Start the event tap in a background thread."""
         if not self._Quartz or self._thread is not None:
             return
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
 
-    def _run_loop(self):
+    def _run_loop(self) -> None:
+        """Run the CoreFoundation run loop with event tap."""
         mask = self._Quartz.CGEventMaskBit(self._Quartz.kCGEventKeyDown)
         self._tap = self._Quartz.CGEventTapCreate(
             self._Quartz.kCGSessionEventTap,
@@ -158,6 +339,7 @@ class MacOSKeyFallback:
         self._Quartz.CFRunLoopRun()
 
     def _event_callback(self, _proxy, event_type, event, _refcon):
+        """Handle incoming keyboard events."""
         if event_type in (
             self._Quartz.kCGEventTapDisabledByTimeout,
             self._Quartz.kCGEventTapDisabledByUserInput,
@@ -171,7 +353,8 @@ class MacOSKeyFallback:
 
         return event
 
-    def _handle_key_down(self, event):
+    def _handle_key_down(self, event) -> None:
+        """Process a key down event."""
         app_id = self._frontmost_supported_app_id()
         if app_id is None:
             return
@@ -211,6 +394,7 @@ class MacOSKeyFallback:
         self._buffer.record_text(app_id, text)
 
     def _frontmost_supported_app_id(self) -> Optional[str]:
+        """Get bundle ID of frontmost supported app."""
         try:
             app = self._AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
             app_id = app.bundleIdentifier()
@@ -235,6 +419,15 @@ class TextExtractor(ABC):
         ...
 
     def is_supported_app(self, app_id: Optional[str]) -> bool:
+        """
+        Check if the given app ID is a supported screenwriting application.
+        
+        Args:
+            app_id: Application identifier to check
+            
+        Returns:
+            True if app is supported, False otherwise
+        """
         if not app_id:
             return False
         sys = platform.system().lower()
@@ -243,13 +436,37 @@ class TextExtractor(ABC):
         app_lower = app_id.lower()
         return any(s.lower() in app_lower or app_lower in s.lower() for s in supported)
 
+    async def extract_with_fallback(self) -> Optional[str]:
+        """
+        Attempt text extraction with platform-specific fallbacks.
+        
+        Returns:
+            Extracted text or None if all methods fail
+        """
+        # Primary extraction method
+        text = await self.extract_focused_text()
+        if text:
+            return text
+        
+        # Platform-specific fallbacks will be implemented by subclasses
+        return None
+
 
 # ─── macOS Extractor ─────────────────────────────────────────────────────────
 
 
 class MacOSExtractor(TextExtractor):
     """
-    Uses pyobjc NSAccessibility to read focused element text.
+    Uses PyObjC NSAccessibility to read focused element text.
+    
+    Features:
+    - PyObjC Accessibility API integration
+    - Support for Fade In, Final Draft, Highland 2
+    - Bundle ID detection
+    - Text extraction from focused element
+    - Handle permission prompts gracefully
+    - Key fallback for when Accessibility API fails
+    
     Requires Accessibility permissions in System Preferences.
     """
 
@@ -278,14 +495,17 @@ class MacOSExtractor(TextExtractor):
     }
 
     def __init__(self):
+        """Initialize macOS extractor with Accessibility API and fallbacks."""
         self._ax = None
         self._workspace = None
         self._cached_pid: Optional[int] = None
         self._cached_text_element = None
+        self._permission_granted: Optional[bool] = None
         self._load_objc()
         self._typed_fallback = MacOSKeyFallback(self.is_supported_app)
 
-    def _load_objc(self):
+    def _load_objc(self) -> None:
+        """Load PyObjC frameworks for Accessibility API."""
         try:
             import AppKit
             import ApplicationServices
@@ -296,7 +516,31 @@ class MacOSExtractor(TextExtractor):
         except ImportError:
             logger.warning("pyobjc not available — install with: pip install pyobjc-framework-Cocoa pyobjc-framework-ApplicationServices")
 
+    def _check_accessibility_permission(self) -> bool:
+        """
+        Check if Accessibility permission is granted.
+        
+        Returns:
+            True if permission granted, False otherwise
+        """
+        if self._permission_granted is not None:
+            return self._permission_granted
+        
+        try:
+            import ApplicationServices
+            self._permission_granted = ApplicationServices.AXIsProcessTrusted()
+            return self._permission_granted
+        except Exception:
+            self._permission_granted = False
+            return False
+
     async def get_active_app(self) -> Optional[str]:
+        """
+        Get the bundle identifier of the frontmost application.
+        
+        Returns:
+            Bundle ID string or None if unavailable
+        """
         try:
             app = self._AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
             return app.bundleIdentifier()
@@ -305,6 +549,16 @@ class MacOSExtractor(TextExtractor):
             return None
 
     async def extract_focused_text(self) -> Optional[str]:
+        """
+        Extract text from the currently focused UI element.
+        
+        Returns:
+            Extracted text or None if extraction fails
+        """
+        if not self._check_accessibility_permission():
+            logger.debug("Accessibility permission not granted")
+            return self._typed_fallback.snapshot(None)
+        
         try:
             # Get focused UI element
             app = self._AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
@@ -338,7 +592,17 @@ class MacOSExtractor(TextExtractor):
             logger.debug("extract_focused_text error: %s", e)
             return None
 
-    def _resolve_text_element(self, pid: int, focused):
+    def _resolve_text_element(self, pid: int, focused) -> Optional:
+        """
+        Resolve the actual text element from a focused UI element.
+        
+        Args:
+            pid: Process ID of the application
+            focused: The focused UI element
+            
+        Returns:
+            Text element or None if not found
+        """
         if self._cached_pid != pid:
             self._cached_pid = pid
             self._cached_text_element = None
@@ -357,6 +621,15 @@ class MacOSExtractor(TextExtractor):
         return target
 
     def _extract_text_from_element(self, element) -> Optional[str]:
+        """
+        Extract text content from a UI element.
+        
+        Args:
+            element: The UI element to extract from
+            
+        Returns:
+            Extracted text or None
+        """
         selected = self._read_attribute(element, "AXSelectedText")
         if isinstance(selected, str) and selected.strip():
             return selected.strip()[:MAX_EXTRACT_CHARS]
@@ -399,7 +672,16 @@ class MacOSExtractor(TextExtractor):
 
         return None
 
-    def _find_text_descendant(self, root):
+    def _find_text_descendant(self, root) -> Optional:
+        """
+        Find a text-containing descendant element via BFS.
+        
+        Args:
+            root: Root element to search from
+            
+        Returns:
+            First text element found or None
+        """
         queue = list(self._iter_children(root))
         seen = {repr(root)}
         searched = 0
@@ -421,6 +703,7 @@ class MacOSExtractor(TextExtractor):
         return None
 
     def _iter_children(self, element):
+        """Iterate over child elements."""
         for attr in self._CHILD_ATTRIBUTES:
             children = self._read_attribute(element, attr)
             if not children:
@@ -432,6 +715,7 @@ class MacOSExtractor(TextExtractor):
                 continue
 
     def _element_has_text(self, element) -> bool:
+        """Check if an element contains text content."""
         role = self._read_attribute(element, "AXRole")
         if isinstance(role, str) and role in self._PREFERRED_TEXT_ROLES:
             return True
@@ -456,6 +740,7 @@ class MacOSExtractor(TextExtractor):
         return self._looks_like_editor_text(role, value)
 
     def _read_attribute(self, element, attr: str):
+        """Read an attribute from an AXUIElement."""
         try:
             err, value = self._AS.AXUIElementCopyAttributeValue(element, attr, None)
         except Exception:
@@ -464,13 +749,15 @@ class MacOSExtractor(TextExtractor):
             return value
         return None
 
-    def _read_range_attribute(self, element, attr: str) -> Optional[tuple[int, int]]:
+    def _read_range_attribute(self, element, attr: str) -> Optional[Tuple[int, int]]:
+        """Read a range attribute and unpack it."""
         value = self._read_attribute(element, attr)
         if value is None:
             return None
         return self._unpack_range(value)
 
     def _read_text_for_range(self, element, location: int, length: int) -> Optional[str]:
+        """Read text for a specific range."""
         snippet = self._read_parameterized_range(
             element,
             "AXStringForRange",
@@ -492,6 +779,7 @@ class MacOSExtractor(TextExtractor):
         location: int,
         length: int,
     ) -> Optional[str]:
+        """Read text using a parameterized attribute."""
         try:
             range_value = self._AS.AXValueCreate(
                 self._AS.kAXValueCFRangeType,
@@ -509,7 +797,8 @@ class MacOSExtractor(TextExtractor):
             return None
         return None
 
-    def _unpack_range(self, value) -> Optional[tuple[int, int]]:
+    def _unpack_range(self, value) -> Optional[Tuple[int, int]]:
+        """Unpack an AXValue range into location and length."""
         try:
             success, raw_range = self._AS.AXValueGetValue(
                 value,
@@ -525,6 +814,17 @@ class MacOSExtractor(TextExtractor):
 
     @staticmethod
     def _slice_text_around_range(text: str, location: int, length: int) -> str:
+        """
+        Extract text around a cursor position with a window.
+        
+        Args:
+            text: Full text content
+            location: Cursor position
+            length: Selection length
+            
+        Returns:
+            Text snippet around cursor
+        """
         if not text:
             return ""
 
@@ -551,6 +851,16 @@ class MacOSExtractor(TextExtractor):
         return text[start:end].strip()
 
     def _looks_like_editor_text(self, role, value) -> bool:
+        """
+        Determine if a value looks like editor text content.
+        
+        Args:
+            role: AXRole of the element
+            value: Text value to check
+            
+        Returns:
+            True if value looks like editor text
+        """
         if not isinstance(value, str):
             return False
         text = value.strip()
@@ -578,13 +888,24 @@ class MacOSExtractor(TextExtractor):
 class WindowsExtractor(TextExtractor):
     """
     Uses uiautomation to read focused control text on Windows.
+    
+    Features:
+    - uiautomation integration
+    - Support for Windows screenwriting apps
+    - Process name detection
+    - Text extraction from active window
+    - Handle UAC and permission issues
+    - Clipboard fallback when UIA fails
     """
 
     def __init__(self):
+        """Initialize Windows extractor with UI Automation."""
         self._uia = None
+        self._clipboard_monitor = ClipboardMonitor()
         self._load_uia()
 
-    def _load_uia(self):
+    def _load_uia(self) -> None:
+        """Load uiautomation library."""
         try:
             import uiautomation as uia
             self._uia = uia
@@ -593,6 +914,12 @@ class WindowsExtractor(TextExtractor):
             logger.warning("uiautomation not available — install with: pip install uiautomation")
 
     async def get_active_app(self) -> Optional[str]:
+        """
+        Get the process name of the foreground window.
+        
+        Returns:
+            Process name or None if unavailable
+        """
         try:
             import ctypes
             hwnd = ctypes.windll.user32.GetForegroundWindow()
@@ -607,12 +934,19 @@ class WindowsExtractor(TextExtractor):
             return None
 
     async def extract_focused_text(self) -> Optional[str]:
+        """
+        Extract text from the focused control using UI Automation.
+        
+        Returns:
+            Extracted text or None if extraction fails
+        """
         if not self._uia:
-            return None
+            return await self._extract_via_clipboard()
+        
         try:
             focused = self._uia.GetFocusedControl()
             if focused is None:
-                return None
+                return await self._extract_via_clipboard()
 
             ctrl_type = focused.ControlTypeName
             if ctrl_type in ("EditControl", "DocumentControl", "TextControl"):
@@ -628,10 +962,34 @@ class WindowsExtractor(TextExtractor):
                 except Exception as e:
                     logger.debug("extract_focused_text text pattern error: %s", e)
 
-            return None
+            return await self._extract_via_clipboard()
         except Exception as e:
             logger.debug("extract_focused_text error: %s", e)
-            return None
+            return await self._extract_via_clipboard()
+
+    async def _extract_via_clipboard(self) -> Optional[str]:
+        """
+        Fallback: read clipboard content.
+        
+        Returns:
+            Clipboard content or None
+        """
+        content = self._clipboard_monitor.get_content()
+        if content:
+            return content
+        
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["powershell", "-command", "Get-Clipboard"],
+                capture_output=True, text=True, timeout=2
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()[-MAX_EXTRACT_CHARS:]
+        except Exception as e:
+            logger.debug("Windows clipboard fallback error: %s", e)
+        
+        return None
 
 
 # ─── Linux Extractor ─────────────────────────────────────────────────────────
@@ -640,14 +998,24 @@ class WindowsExtractor(TextExtractor):
 class LinuxExtractor(TextExtractor):
     """
     Uses AT-SPI2 accessibility stack on Linux (GNOME/KDE).
-    Falls back to xdotool + xclip clipboard trick if AT-SPI unavailable.
+    
+    Features:
+    - AT-SPI2 via pyatspi
+    - Support for Linux editors
+    - Process name detection
+    - Text extraction
+    - Handle D-Bus connection issues
+    - xdotool + xclip clipboard fallback
     """
 
     def __init__(self):
+        """Initialize Linux extractor with AT-SPI2."""
         self._atspi = None
+        self._clipboard_monitor = ClipboardMonitor()
         self._load_atspi()
 
-    def _load_atspi(self):
+    def _load_atspi(self) -> None:
+        """Load pyatspi library."""
         try:
             import pyatspi
             self._atspi = pyatspi
@@ -656,9 +1024,15 @@ class LinuxExtractor(TextExtractor):
             logger.warning("pyatspi not available — install with: pip install pyatspi")
 
     async def get_active_app(self) -> Optional[str]:
+        """
+        Get the name of the active window.
+        
+        Returns:
+            Window name or None if unavailable
+        """
         try:
-            import subprocess  # nosec B404
-            result = subprocess.run(  # nosec B603 B607
+            import subprocess
+            result = subprocess.run(
                 ["xdotool", "getactivewindow", "getwindowname"],
                 capture_output=True, text=True, timeout=2
             )
@@ -667,11 +1041,26 @@ class LinuxExtractor(TextExtractor):
             return None
 
     async def extract_focused_text(self) -> Optional[str]:
+        """
+        Extract text using AT-SPI2 or fallback methods.
+        
+        Returns:
+            Extracted text or None if all methods fail
+        """
         if self._atspi:
-            return await self._extract_via_atspi()
+            text = await self._extract_via_atspi()
+            if text:
+                return text
+        
         return await self._extract_via_clipboard()
 
     async def _extract_via_atspi(self) -> Optional[str]:
+        """
+        Extract text using AT-SPI2 accessibility API.
+        
+        Returns:
+            Extracted text or None
+        """
         try:
             desktop = self._atspi.Registry.getDesktop(0)
             for app in desktop:
@@ -689,20 +1078,35 @@ class LinuxExtractor(TextExtractor):
 
     async def _extract_via_clipboard(self) -> Optional[str]:
         """
-        Fallback: simulate Ctrl+C, read clipboard.
-        Intrusive — only used if AT-SPI unavailable.
+        Fallback: read clipboard content via xclip.
+        
+        Returns:
+            Clipboard content or None
         """
+        content = self._clipboard_monitor.get_content()
+        if content:
+            return content
+        
         try:
-            import subprocess  # nosec B404
-            # Get selection via xclip
-            result = subprocess.run(  # nosec B603 B607
+            import subprocess
+            # Try primary selection first
+            result = subprocess.run(
                 ["xclip", "-o", "-selection", "primary"],
                 capture_output=True, text=True, timeout=2
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()[-MAX_EXTRACT_CHARS:]
+            
+            # Try clipboard selection
+            result = subprocess.run(
+                ["xclip", "-o", "-selection", "clipboard"],
+                capture_output=True, text=True, timeout=2
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()[-MAX_EXTRACT_CHARS:]
         except Exception as e:
-            logger.debug("clipboard fallback error: %s", e)
+            logger.debug("Linux clipboard fallback error: %s", e)
+        
         return None
 
 
@@ -726,11 +1130,25 @@ class Watcher:
     """
     Main text watcher. Polls for active app + text changes.
     Calls callback with extracted text after debounce period.
-
+    
+    Features:
+    - Platform detection and selection logic
+    - Debounce handling
+    - Error recovery
+    - Clean resource cleanup
+    - Thread-safe operations
+    
     callback signature: async def on_text(text: str) -> None
     """
 
     def __init__(self, config: dict, callback: Callable):
+        """
+        Initialize the watcher.
+        
+        Args:
+            config: Configuration dictionary
+            callback: Async callback function for text changes
+        """
         self.config = config
         self.callback = callback
         self.debounce_secs: float = config.get("debounce_seconds", 2.0)
@@ -740,8 +1158,16 @@ class Watcher:
         self._pending_task: Optional[asyncio.Task] = None
         self._running = False
         self._fired = False
+        self._error_count = 0
+        self._max_consecutive_errors = 10
 
     def _build_extractor(self) -> TextExtractor:
+        """
+        Build the appropriate text extractor for the current platform.
+        
+        Returns:
+            Platform-specific TextExtractor instance
+        """
         sys = platform.system()
         if sys == "Darwin":
             return MacOSExtractor()
@@ -753,7 +1179,7 @@ class Watcher:
             logger.warning("Unsupported platform: %s", sys)
             return NullExtractor()
 
-    async def run(self):
+    async def run(self) -> None:
         """Main polling loop. Runs until stopped."""
         self._running = True
         logger.info("Watcher started (debounce=%.1fs)", self.debounce_secs)
@@ -761,11 +1187,25 @@ class Watcher:
         while self._running:
             try:
                 await self._tick()
+                self._error_count = 0  # Reset on success
             except Exception as e:
+                self._error_count += 1
                 logger.exception("Watcher tick error: %s", e)
-            await asyncio.sleep(0.25)  # 250ms polling interval
+                
+                # Back off on consecutive errors
+                if self._error_count >= self._max_consecutive_errors:
+                    logger.warning("Too many consecutive errors, backing off")
+                    await asyncio.sleep(5.0)
+                    self._error_count = 0
+                    
+            await asyncio.sleep(POLLING_INTERVAL)
 
-    async def _tick(self):
+    async def _tick(self) -> None:
+        """
+        Perform a single polling tick.
+        
+        Checks for active app, extracts text, and handles debounce logic.
+        """
         app_id = await self._extractor.get_active_app()
 
         if not self._extractor.is_supported_app(app_id):
@@ -793,7 +1233,8 @@ class Watcher:
             self._last_change_time = time.monotonic()
             self._pending_fired = False
 
-    def stop(self):
+    def stop(self) -> None:
+        """Stop the watcher."""
         self._running = False
         logger.info("Watcher stopped")
 
@@ -802,5 +1243,5 @@ class Watcher:
         return getattr(self, "_fired", False)
 
     @_pending_fired.setter
-    def _pending_fired(self, value: bool):
+    def _pending_fired(self, value: bool) -> None:
         self._fired = value

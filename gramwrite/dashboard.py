@@ -1,6 +1,13 @@
 """
 dashboard.py — GramWrite Settings Panel
 Branded secondary UI for configuration.
+
+Provides:
+- DashboardWindow: Full settings panel with sidebar navigation
+- Tabbed interface: General, Model, Appearance, Advanced, About
+- Real-time backend status display
+- Model discovery and selection
+- Configuration persistence
 """
 
 from __future__ import annotations
@@ -44,13 +51,34 @@ SENSITIVITY_REVERSE = {v: i for i, (k, v) in enumerate(SENSITIVITY_MAP.items())}
 
 class DashboardWindow(QWidget):
     """
-    Settings panel. Opens on demand from the floating dot.
-    Brings the shipped dashboard closer to the brand manual layout.
+    Settings panel — opens on demand from the floating dot.
+
+    Features:
+    - Sidebar navigation with 5 pages: General, Model, Appearance, Advanced, About
+    - Tab-based secondary navigation matching sidebar
+    - Real-time backend status card
+    - Model discovery from Ollama, LM Studio, Apple Foundation Models, Harper
+    - Configuration persistence via config_store
+    - Brand-consistent dark theme with green accent
+
+    Pages:
+    - General: Backend selection, debounce, sensitivity, strict mode
+    - Model: Active model, system prompt, model refresh
+    - Appearance: Palette reference, dot states, typography notes
+    - Advanced: Context chars, dashboard port, privacy pledge
+    - About: Version, authorship, philosophy
     """
 
-    config_updated = pyqtSignal(dict)
+    config_updated = pyqtSignal(dict)  # Emitted when settings are saved
 
     def __init__(self, config: dict, engine: GramEngine):
+        """
+        Initialize the settings dashboard.
+
+        Args:
+            config: Shared configuration dictionary.
+            engine: GramEngine instance for model queries and status.
+        """
         super().__init__(None)
         self._config = config
         self._engine = engine

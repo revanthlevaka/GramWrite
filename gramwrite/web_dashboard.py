@@ -1,6 +1,12 @@
 """
 web_dashboard.py — GramWrite Localhost API & Web Dashboard
 Fulfills the promised http://localhost:7878 interface.
+
+Provides:
+- REST API for configuration management
+- Static dashboard HTML serving
+- Real-time suggestion push via Server-Sent Events (SSE)
+- Backend status and capability reporting
 """
 
 import os
@@ -8,6 +14,7 @@ import sys
 import json
 import logging
 import asyncio
+import time
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -22,11 +29,25 @@ logger = logging.getLogger(__name__)
 
 class WebDashboard:
     """
-    Minimal aiohttp server for configuration management.
-    Syncs with the main app's config dictionary.
+    Minimal aiohttp server for configuration management and real-time updates.
+
+    Features:
+    - REST API for config get/set
+    - Model discovery endpoint
+    - Capability reporting (Apple Foundation Models, Harper)
+    - Server-Sent Events (SSE) for real-time suggestion streaming
+    - Static dashboard HTML serving
     """
 
     def __init__(self, config: dict, engine: GramEngine, on_update: Optional[Callable[[dict], None]] = None):
+        """
+        Initialize the web dashboard.
+
+        Args:
+            config: Shared configuration dictionary.
+            engine: GramEngine instance for model queries.
+            on_update: Callback invoked when config is updated via API.
+        """
         self.config = config
         self.engine = engine
         self.on_update = on_update
@@ -34,16 +55,20 @@ class WebDashboard:
         self._runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
         self._latest_suggestion: Optional[dict] = None
+        self._sse_clients: list[web.StreamResponse] = []
 
         self._setup_routes()
 
     def _setup_routes(self):
+        """Register all HTTP route handlers."""
         self.app.router.add_get('/', self.handle_index)
         self.app.router.add_get('/api/config', self.handle_get_config)
         self.app.router.add_post('/api/config', self.handle_post_config)
         self.app.router.add_get('/api/models', self.handle_get_models)
         self.app.router.add_get('/api/capabilities', self.handle_get_capabilities)
         self.app.router.add_get('/api/suggestion', self.handle_get_suggestion)
+        self.app.router.add_get('/api/suggestions/stream', self.handle_sse_stream)
+        self.app.router.add_get('/api/status', self.handle_status)
 
     async def handle_index(self, request):
         for base_dir in self._static_roots():
@@ -119,13 +144,80 @@ class WebDashboard:
         )
 
     async def handle_get_suggestion(self, request):
+        """Return the latest grammar suggestion, or empty state."""
         if self._latest_suggestion:
             return web.json_response(self._latest_suggestion)
         return web.json_response({"has_suggestion": False})
 
+    async def handle_sse_stream(self, request):
+        """
+        Server-Sent Events endpoint for real-time suggestion streaming.
+        Clients connect here to receive live updates without polling.
+        """
+        response = web.StreamResponse(
+            status=200,
+            reason='OK',
+            headers={
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+                'Access-Control-Allow-Origin': '*',
+            }
+        )
+        await response.prepare(request)
+        self._sse_clients.append(response)
+
+        try:
+            # Send initial state
+            initial_data = json.dumps(self._latest_suggestion or {"has_suggestion": False})
+            await response.write(f"data: {initial_data}\n\n")
+
+            # Keep connection alive with periodic pings
+            while True:
+                await asyncio.sleep(15)
+                await response.write(b": ping\n\n")
+        except (ConnectionResetError, asyncio.CancelledError):
+            pass
+        finally:
+            if response in self._sse_clients:
+                self._sse_clients.remove(response)
+
+    async def handle_status(self, request):
+        """Return current application status summary."""
+        return web.json_response({
+            "state": "running",
+            "backend": self.config.get("backend", "auto"),
+            "model": self.config.get("model", "unknown"),
+            "sensitivity": self.config.get("sensitivity", "medium"),
+            "strict_mode": self.config.get("strict_mode", True),
+            "has_suggestion": self._latest_suggestion is not None and self._latest_suggestion.get("has_suggestion", False),
+            "uptime": time.time(),
+        })
+
     def push_suggestion(self, result: dict):
-        """Push a pipeline result to the web dashboard for live polling."""
+        """
+        Push a pipeline result to the web dashboard for live streaming.
+
+        Updates the latest suggestion and broadcasts to all SSE clients.
+
+        Args:
+            result: Dictionary containing suggestion data.
+        """
         self._latest_suggestion = result
+
+        # Broadcast to SSE clients
+        data = json.dumps(result)
+        disconnected = []
+        for client in self._sse_clients:
+            try:
+                asyncio.create_task(client.write(f"data: {data}\n\n"))
+            except Exception:
+                disconnected.append(client)
+
+        # Clean up disconnected clients
+        for client in disconnected:
+            if client in self._sse_clients:
+                self._sse_clients.remove(client)
 
     async def start(self, port: int = 7878):
         self._runner = web.AppRunner(self.app)
