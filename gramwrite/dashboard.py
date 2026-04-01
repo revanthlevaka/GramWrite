@@ -340,24 +340,11 @@ class DashboardWindow(QWidget):
         chrome_layout = QHBoxLayout(chrome)
         chrome_layout.setContentsMargins(18, 12, 18, 12)
 
-        dots = QHBoxLayout()
-        dots.setSpacing(6)
-        for color in ("#e05555", "#c9a84c", "#3ab078"):
-            dot = QLabel("●")
-            dot.setStyleSheet(f"color: {color}; font-size: 12px;")
-            dots.addWidget(dot)
-        dots_widget = QWidget()
-        dots_widget.setLayout(dots)
-
         title = QLabel("GramWrite — Settings")
         title.setObjectName("chrome-title")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        chrome_layout.addWidget(dots_widget)
-        chrome_layout.addStretch()
         chrome_layout.addWidget(title)
-        chrome_layout.addStretch()
-        chrome_layout.addSpacing(dots_widget.sizeHint().width())
         return chrome
 
     def _build_sidebar(self) -> QWidget:
