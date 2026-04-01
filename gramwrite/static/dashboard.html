@@ -49,28 +49,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
             padding: 14px 20px;
             border-bottom: 1px solid var(--border);
             background: var(--ink);
         }
-
-        .chrome-dots {
-            position: absolute;
-            left: 18px;
-            display: flex;
-            gap: 6px;
-        }
-
-        .chrome-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .cd-red { background: var(--red); }
-        .cd-yellow { background: #c9a84c; }
-        .cd-green { background: var(--accent); }
 
         .chrome-title {
             color: var(--text-dim);
@@ -449,11 +431,6 @@
 <body>
     <div class="shell">
         <div class="chrome">
-            <div class="chrome-dots">
-                <div class="chrome-dot cd-red"></div>
-                <div class="chrome-dot cd-yellow"></div>
-                <div class="chrome-dot cd-green"></div>
-            </div>
             <div class="chrome-title">GramWrite — Settings</div>
         </div>
 
