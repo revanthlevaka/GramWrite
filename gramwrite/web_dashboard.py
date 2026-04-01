@@ -33,7 +33,8 @@ class WebDashboard:
         self.app = web.Application()
         self._runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
-        
+        self._latest_suggestion: Optional[dict] = None
+
         self._setup_routes()
 
     def _setup_routes(self):
@@ -42,6 +43,7 @@ class WebDashboard:
         self.app.router.add_post('/api/config', self.handle_post_config)
         self.app.router.add_get('/api/models', self.handle_get_models)
         self.app.router.add_get('/api/capabilities', self.handle_get_capabilities)
+        self.app.router.add_get('/api/suggestion', self.handle_get_suggestion)
 
     async def handle_index(self, request):
         for base_dir in self._static_roots():
@@ -115,6 +117,15 @@ class WebDashboard:
                 "harper_reason": harper_status.reason,
             }
         )
+
+    async def handle_get_suggestion(self, request):
+        if self._latest_suggestion:
+            return web.json_response(self._latest_suggestion)
+        return web.json_response({"has_suggestion": False})
+
+    def push_suggestion(self, result: dict):
+        """Push a pipeline result to the web dashboard for live polling."""
+        self._latest_suggestion = result
 
     async def start(self, port: int = 7878):
         self._runner = web.AppRunner(self.app)

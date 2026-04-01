@@ -532,6 +532,17 @@ class AsyncWorkerThread(QThread):
         asyncio.set_event_loop(self._loop)
 
         def on_result(result: PipelineResult):
+            # Push to web dashboard for live polling
+            if hasattr(self, "_web"):
+                self._web.push_suggestion({
+                    "has_suggestion": result.has_suggestion,
+                    "original": result.parsed.text,
+                    "correction": result.suggestion,
+                    "confidence": result.confidence,
+                    "diff_html": result.diff_html,
+                    "parsed": result.parsed.to_dict(),
+                })
+
             if result.has_suggestion:
                 self._bridge.correction_ready.emit(
                     result.parsed.text,

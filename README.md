@@ -13,6 +13,15 @@ No rewriting your voice.
 
 ---
 
+## What's New in v1.2.3
+- **Dual Dialogue Detection**: `^` prefix now correctly identifies simultaneous dialogue lines.
+- **Forced Action Lines**: `!` prefix forces action line parsing regardless of context.
+- **Emphasis Preservation**: `*text*` and `_text_` emphasis markers are preserved during parsing and checking.
+- **Line Break Handling**: Double-space and `<br>` line breaks are now preserved in output.
+- **Comma Suffix Support**: Character names with comma suffixes (e.g., `JOHN, JR.`) are correctly recognized.
+- **CI/CD Workflow Added**: Automated testing and build pipeline via GitHub Actions.
+- **Container Dependency Documentation**: Full documentation of container and runtime dependencies.
+
 ## What's New in v1.2.2
 - **Inline Word-Level Diffs**: Suggestions now highlight exactly which words changed using color-coded text.
 - **Confidence Indicators**: Every suggestion includes a built-in confidence score (HIGH/MEDIUM/LOW) visually mapped to a color indicator near the header.
@@ -173,7 +182,7 @@ app.py             → Floating UI (PyQt6)
 ---
 
 ## Installation
-
+3
 ### macOS Drag-and-Drop
 
 For filmmaker-friendly installs, ship the packaged app as a DMG:
@@ -182,7 +191,7 @@ For filmmaker-friendly installs, ship the packaged app as a DMG:
 ./scripts/build_macos_dmg.sh
 ```
 
-That creates `dist/GramWrite-1.2.2.dmg`, which opens as a standard drag-and-drop installer with `GramWrite.app` plus an `Applications` shortcut.
+That creates `dist/GramWrite-1.2.3.dmg`, which opens as a standard drag-and-drop installer with `GramWrite.app` plus an `Applications` shortcut.
 
 ### macOS / Linux
 

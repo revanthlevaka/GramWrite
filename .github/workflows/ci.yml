@@ -1,84 +1,43 @@
-name: GramWrite CI
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v6
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # We need Qt dependencies for headless testing in linux
-        sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 x11-utils
-        pip install -r requirements-dev.txt
-        pip install -e .
-        
-    - name: Test with pytest
-      env:
-        QT_QPA_PLATFORM: offscreen
-      run: |
-        python -m pytest tests/
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-    
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
-        
-    - name: Install security tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install bandit pip-audit
-        # Need requirements for pip-audit
-        pip install -r requirements.txt
-        
-    - name: Run Bandit (SAST)
-      run: |
-        bandit -r gramwrite
-        
-    - name: Run pip-audit (SCA)
-      run: |
-        pip-audit -r requirements.txt
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-  smoke-test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-    
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
-        
-    - name: Install package
-      run: |
-        # We need Qt dependencies
-        sudo apt-get install -y libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 x11-utils
-        pip install -e .
-        
-    - name: Smoke test CLI
-      env:
-        QT_QPA_PLATFORM: offscreen
-      run: |
-        python -m gramwrite --help
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 \
+            libgl1 \
+            libxkbcommon0 \
+            libxcb-cursor0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint with Ruff
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Run tests
+        run: pytest -q

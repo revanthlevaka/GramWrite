@@ -413,6 +413,103 @@
             padding: 2px 6px;
         }
 
+        /* ─── Suggestion Panel ─────────────────────────────────────────────── */
+
+        .suggestion-card {
+            background: var(--ink-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-title {
+            color: var(--paper);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        .badge-type {
+            background: rgba(58, 176, 120, 0.12);
+            color: var(--accent);
+        }
+
+        .badge-type.action {
+            background: rgba(201, 168, 76, 0.12);
+            color: #c9a84c;
+        }
+
+        .badge-dual {
+            background: rgba(130, 100, 220, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(130, 100, 220, 0.25);
+        }
+
+        .badge-confidence {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .badge-confidence.high {
+            background: rgba(76, 175, 80, 0.12);
+            color: #4CAF50;
+        }
+
+        .badge-confidence.medium {
+            background: rgba(255, 193, 7, 0.12);
+            color: #FFC107;
+        }
+
+        .badge-confidence.low {
+            background: rgba(120, 120, 130, 0.12);
+            color: #787882;
+        }
+
+        .suggestion-original {
+            color: var(--red);
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+
+        .suggestion-arrow {
+            color: var(--text-dim);
+            font-size: 10px;
+            margin-bottom: 6px;
+        }
+
+        .suggestion-corrected {
+            color: var(--accent);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .suggestion-empty {
+            color: var(--text-ghost);
+            font-size: 11px;
+            text-align: center;
+            padding: 32px 0;
+        }
+
         footer {
             margin-top: 20px;
             color: var(--text-dim);
@@ -452,6 +549,9 @@
                 <div class="nav-item" data-tab="appearance">Appearance</div>
                 <div class="nav-item" data-tab="advanced">Advanced</div>
 
+                <div class="nav-group">Live</div>
+                <div class="nav-item" data-tab="suggestions">Suggestions</div>
+
                 <div class="nav-group">System</div>
                 <div class="nav-item" data-tab="about">About</div>
 
@@ -470,6 +570,7 @@
                     <div class="tab" data-tab="model">Model</div>
                     <div class="tab" data-tab="appearance">Appearance</div>
                     <div class="tab" data-tab="advanced">Advanced</div>
+                    <div class="tab" data-tab="suggestions">Suggestions</div>
                     <div class="tab" data-tab="about">About</div>
                 </div>
 
@@ -626,7 +727,7 @@
                     <div class="settings-grid">
                         <div class="form-group settings-full">
                             <div class="info-card">
-                                <p>Version 1.2.2 · MIT License</p>
+                                <p>Version 1.2.3 · MIT License</p>
                                 <p>Built by Revanth Levaka.</p>
                                 <p>A local-first grammar sidecar for screenwriters.</p>
                                 <p>Optional Harper backend powered by Harper from Automattic.</p>
@@ -635,11 +736,19 @@
                         </div>
                     </div>
                 </section>
+
+                <section class="panel" id="panel-suggestions">
+                    <div class="panel-title">Suggestions</div>
+                    <div class="panel-copy">Live grammar suggestions from the current writing session.</div>
+                    <div id="suggestion-feed">
+                        <div class="suggestion-empty">No suggestions yet — start writing in your screenplay editor.</div>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
 
-    <footer>GramWrite v1.2.2 · Localhost Dashboard</footer>
+    <footer>GramWrite v1.2.3 · Localhost Dashboard</footer>
 
     <script>
         const FOUNDATION_BACKEND = "foundation_models";
@@ -879,6 +988,68 @@
         document.getElementById("sensitivity").addEventListener("input", (e) => {
             document.getElementById("sensitivity-label").innerText = sensitivityLabels[e.target.value];
         });
+
+        // ─── Suggestion Polling ──────────────────────────────────────────────
+
+        let lastSuggestionHash = "";
+
+        function renderSuggestion(data) {
+            const feed = document.getElementById("suggestion-feed");
+            if (!data.has_suggestion) {
+                feed.innerHTML = '<div class="suggestion-empty">No suggestions yet — start writing in your screenplay editor.</div>';
+                return;
+            }
+
+            const parsed = data.parsed || {};
+            const elementType = (parsed.type || "dialogue").toLowerCase();
+            const isDual = parsed.is_dual_dialogue === true;
+            const confidence = (data.confidence || "low").toLowerCase();
+
+            const typeBadgeClass = elementType === "action" ? "badge badge-type action" : "badge badge-type";
+            const confClass = `badge badge-confidence ${confidence}`;
+
+            let dualBadge = "";
+            if (isDual) {
+                dualBadge = '<span class="badge badge-dual" title="Dual dialogue — simultaneous speech">⧉ Dual</span>';
+            }
+
+            feed.innerHTML = `
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <span class="suggestion-title">Latest Suggestion</span>
+                        <span class="${typeBadgeClass}">${elementType}</span>
+                        ${dualBadge}
+                        <span class="${confClass}">${confidence}</span>
+                    </div>
+                    <div class="suggestion-original">"${escapeHtml(data.original || "")}"</div>
+                    <div class="suggestion-arrow">↓</div>
+                    <div class="suggestion-corrected">"${escapeHtml(data.correction || "")}"</div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function pollSuggestion() {
+            try {
+                const resp = await fetch("/api/suggestion");
+                const data = await resp.json();
+                const hash = JSON.stringify(data);
+                if (hash !== lastSuggestionHash) {
+                    lastSuggestionHash = hash;
+                    renderSuggestion(data);
+                }
+            } catch (err) {
+                // Dashboard may not have suggestion endpoint yet — fail silently
+            }
+        }
+
+        setInterval(pollSuggestion, 2000);
+        pollSuggestion();
 
         window.onload = loadConfig;
     </script>
