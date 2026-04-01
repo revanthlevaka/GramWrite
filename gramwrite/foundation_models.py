@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404 - required for fixed local helper build/sign commands on macOS
 import sys
 import tempfile
 import time
@@ -211,7 +211,7 @@ class FoundationModelsBridge:
             str(executable_path),
         ]
         try:
-            completed = subprocess.run(
+            completed = subprocess.run(  # nosec B603 - fixed command list, no shell, local bundled helper source
                 command,
                 capture_output=True,
                 text=True,
@@ -237,7 +237,7 @@ class FoundationModelsBridge:
             str(bundle_path),
         ]
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B603 - fixed codesign invocation for the local helper bundle, no shell
                 sign_command,
                 capture_output=True,
                 text=True,
