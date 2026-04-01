@@ -8,12 +8,15 @@ import sys
 import json
 import logging
 import asyncio
+from pathlib import Path
 from typing import Optional, Callable
 
 from aiohttp import web
 import yaml
 
 from .engine import GramEngine
+from .foundation_models import FOUNDATION_BACKEND_KEY, FOUNDATION_MODEL_ID
+from .harper import HARPER_BACKEND_KEY, HARPER_MODEL_ID
 
 logger = logging.getLogger(__name__)
 
@@ -38,21 +41,26 @@ class WebDashboard:
         self.app.router.add_get('/api/config', self.handle_get_config)
         self.app.router.add_post('/api/config', self.handle_post_config)
         self.app.router.add_get('/api/models', self.handle_get_models)
+        self.app.router.add_get('/api/capabilities', self.handle_get_capabilities)
 
     async def handle_index(self, request):
-        if hasattr(sys, '_MEIPASS'):
-            base_dir = sys._MEIPASS
-        else:
-            base_dir = os.path.dirname(os.path.dirname(__file__))
-
-        static_path = os.path.join(base_dir, 'gramwrite', 'static', 'dashboard.html')
-        try:
+        for base_dir in self._static_roots():
+            static_path = base_dir / 'gramwrite' / 'static' / 'dashboard.html'
+            if not static_path.exists():
+                continue
             with open(static_path, 'r') as f:
                 content = f.read()
             return web.Response(text=content, content_type='text/html')
-        except FileNotFoundError:
-            logger.error("Web Dashboard index not found at %s", static_path)
-            return web.Response(text=f"Dashboard HTML not found at {static_path}", status=404)
+
+        checked_paths = [
+            str(base_dir / 'gramwrite' / 'static' / 'dashboard.html')
+            for base_dir in self._static_roots()
+        ]
+        logger.error("Web Dashboard index not found in any known location: %s", checked_paths)
+        return web.Response(
+            text="Dashboard HTML not found. Checked:\n" + "\n".join(checked_paths),
+            status=404,
+        )
 
     async def handle_get_config(self, request):
         # Exclude internal keys starting with _
@@ -64,7 +72,7 @@ class WebDashboard:
             data = await request.json()
             # Update live config
             for k, v in data.items():
-                if k in self.config and not k.startswith('_'):
+                if not k.startswith('_'):
                     self.config[k] = v
             
             # Persist to disk
@@ -72,7 +80,7 @@ class WebDashboard:
             save_data = {k: v for k, v in self.config.items() if not k.startswith('_')}
             
             with open(config_path, 'w') as f:
-                yaml.dump(save_data, f, default_flow_style=False, allow_unicode=True)
+                yaml.dump(save_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
             
             logger.info("Config updated via Web Dashboard and saved to %s", config_path)
             
@@ -87,8 +95,29 @@ class WebDashboard:
     async def handle_get_models(self, request):
         ollama = await self.engine.list_ollama_models()
         lmstudio = await self.engine.list_lmstudio_models()
-        models = list(dict.fromkeys(ollama + lmstudio))
+        foundation = await self.engine.list_foundation_models()
+        harper = await self.engine.list_harper_models()
+        models = list(dict.fromkeys(ollama + lmstudio + foundation + harper))
         return web.json_response(models)
+
+    async def handle_get_capabilities(self, request):
+        foundation_status = await self.engine.foundation_models_status()
+        harper_status = await self.engine.harper_status()
+        return web.json_response(
+            {
+                "platform": sys.platform,
+                "apple_foundation_models_backend": FOUNDATION_BACKEND_KEY,
+                "apple_foundation_models_model": FOUNDATION_MODEL_ID,
+                "apple_foundation_models_supported": foundation_status.supported,
+                "apple_foundation_models_available": foundation_status.available,
+                "apple_foundation_models_reason": foundation_status.reason,
+                "harper_backend": HARPER_BACKEND_KEY,
+                "harper_model": HARPER_MODEL_ID,
+                "harper_supported": harper_status.supported,
+                "harper_available": harper_status.available,
+                "harper_reason": harper_status.reason,
+            }
+        )
 
     async def start(self, port: int = 7878):
         self._runner = web.AppRunner(self.app)
@@ -98,8 +127,34 @@ class WebDashboard:
         logger.info("Web Dashboard started at http://localhost:%d", port)
 
     async def stop(self):
-        if self._site:
-            await self._site.stop()
+        if self._site and self._runner:
+            try:
+                if self._site in self._runner.sites:
+                    await self._site.stop()
+            except RuntimeError:
+                logger.debug("Web Dashboard site was already detached during shutdown.")
         if self._runner:
             await self._runner.cleanup()
         logger.info("Web Dashboard stopped")
+
+    @staticmethod
+    def _static_roots() -> list[Path]:
+        if hasattr(sys, '_MEIPASS'):
+            meipass = Path(sys._MEIPASS)
+            candidates = [
+                meipass,
+                meipass.parent / 'Resources',
+                meipass.parent / 'Frameworks',
+            ]
+        else:
+            candidates = [Path(os.path.dirname(os.path.dirname(__file__)))]
+
+        unique_roots: list[Path] = []
+        seen: set[Path] = set()
+        for candidate in candidates:
+            resolved = candidate.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            unique_roots.append(candidate)
+        return unique_roots

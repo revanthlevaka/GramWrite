@@ -27,7 +27,7 @@ head() { echo -e "\n${BOLD}$*${RESET}"; }
 # ── Banner ─────────────────────────────────────────────────────────────────────
 echo -e "${DIM}"
 echo "  ┌─────────────────────────────────────────┐"
-echo "  │  G R A M W R I T E   v1.2.0             │"
+echo "  │  G R A M W R I T E   v1.2.2             │"
 echo "  │  The Invisible Editor for Screenwriters  │"
 echo "  └─────────────────────────────────────────┘"
 echo -e "${RESET}"
@@ -124,10 +124,32 @@ head "Installing GramWrite…"
 pip install -e . --quiet
 ok "GramWrite installed (editable mode)"
 
+# ── Optional Harper helper ────────────────────────────────────────────────────
+head "Checking optional Harper backend…"
+
+HARPER_DIR="$GRAMWRITE_DIR/gramwrite/native/harper"
+HARPER_OK=false
+
+if command -v npm &>/dev/null; then
+    log "Installing Harper helper dependencies…"
+    if npm install --prefix "$HARPER_DIR" --silent; then
+        ok "Harper helper installed"
+        HARPER_OK=true
+    else
+        warn "Harper helper install failed — run: npm install --prefix \"$HARPER_DIR\""
+    fi
+else
+    warn "npm not found — Harper backend will stay unavailable until Node.js is installed."
+fi
+
 # ── Check LLM Backend ─────────────────────────────────────────────────────────
-head "Checking LLM backends…"
+head "Checking local backends…"
 
 BACKEND_OK=false
+
+if [ "$PLATFORM" = "macos" ]; then
+    log "Apple Foundation Models can also be selected inside GramWrite on Apple Intelligence-enabled Macs."
+fi
 
 # Check Ollama
 if curl -sf "http://localhost:11434/api/tags" &>/dev/null; then
@@ -154,14 +176,27 @@ if curl -sf "http://localhost:1234/v1/models" &>/dev/null; then
     BACKEND_OK=true
 fi
 
+if [ "$HARPER_OK" = true ]; then
+    ok "Harper helper is ready"
+    BACKEND_OK=true
+fi
+
 if [ "$BACKEND_OK" = false ]; then
-    warn "No LLM backend detected. GramWrite needs Ollama or LM Studio to function."
+    warn "No local backend detected. GramWrite needs Ollama, LM Studio, Apple Foundation Models, or Harper to function."
     echo ""
     echo "    Ollama (recommended, free):"
     echo "      https://ollama.com → install → ollama pull qwen3.5:0.8b"
     echo ""
     echo "    LM Studio:"
     echo "      https://lmstudio.ai → download qwen3.5 → start local server"
+    echo ""
+    echo "    Harper (English grammar checker):"
+    echo "      Install Node.js, then run: npm install --prefix \"$HARPER_DIR\""
+    if [ "$PLATFORM" = "macos" ]; then
+        echo ""
+        echo "    Apple Foundation Models:"
+        echo "      Available on Apple Intelligence-enabled Macs from inside GramWrite."
+    fi
 fi
 
 # ── macOS Accessibility ────────────────────────────────────────────────────────

@@ -89,7 +89,7 @@ class Controller:
 
         # Detect backend early
         backend = await self._engine.detect_backend()
-        logger.info("LLM backend: %s", backend.value)
+        logger.info("Grammar backend: %s", backend.value)
 
         # Start background worker
         self._worker_task = asyncio.create_task(self._process_worker())

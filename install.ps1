@@ -22,7 +22,7 @@ function Write-Head { Write-Host "`n  $args" -ForegroundColor White }
 # ── Banner ────────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "  ┌─────────────────────────────────────────┐" -ForegroundColor DarkGray
-Write-Host "  │  G R A M W R I T E   v1.2.0             │" -ForegroundColor DarkGray
+Write-Host "  │  G R A M W R I T E   v1.2.2             │" -ForegroundColor DarkGray
 Write-Host "  │  The Invisible Editor for Screenwriters  │" -ForegroundColor DarkGray
 Write-Host "  └─────────────────────────────────────────┘" -ForegroundColor DarkGray
 Write-Host ""
@@ -100,9 +100,35 @@ Push-Location $GramWriteDir
 Pop-Location
 Write-Ok "GramWrite installed (editable mode)"
 
-# ── LLM Backend check ────────────────────────────────────────────────────────
+# ── Optional Harper helper ───────────────────────────────────────────────────
+Write-Head "Checking optional Harper backend..."
+
+$HarperDir = Join-Path $GramWriteDir "gramwrite\native\harper"
+$HarperOk = $false
+$NpmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+if (-not $NpmCmd) {
+    $NpmCmd = Get-Command npm -ErrorAction SilentlyContinue
+}
+
+if ($NpmCmd) {
+    try {
+        & $NpmCmd.Source install --prefix $HarperDir --silent
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "Harper helper installed"
+            $HarperOk = $true
+        } else {
+            Write-Warn "Harper helper install failed — run: npm install --prefix `"$HarperDir`""
+        }
+    } catch {
+        Write-Warn "Harper helper install failed — run: npm install --prefix `"$HarperDir`""
+    }
+} else {
+    Write-Warn "npm not found — Harper backend will stay unavailable until Node.js is installed."
+}
+
+# ── Local backend check ──────────────────────────────────────────────────────
 if (-not $SkipBackendCheck) {
-    Write-Head "Checking LLM backends..."
+    Write-Head "Checking local backends..."
 
     $BackendOk = $false
 
@@ -135,14 +161,22 @@ if (-not $SkipBackendCheck) {
         }
     } catch {}
 
+    if ($HarperOk) {
+        Write-Ok "Harper helper is ready"
+        $BackendOk = $true
+    }
+
     if (-not $BackendOk) {
-        Write-Warn "No LLM backend detected."
+        Write-Warn "No local backend detected."
         Write-Host ""
         Write-Host "    Ollama (recommended, free):" -ForegroundColor DarkGray
         Write-Host "      https://ollama.com → install → run: ollama pull qwen3.5:0.8b" -ForegroundColor DarkGray
         Write-Host ""
         Write-Host "    LM Studio:" -ForegroundColor DarkGray
         Write-Host "      https://lmstudio.ai → download a model → start local server" -ForegroundColor DarkGray
+        Write-Host ""
+        Write-Host "    Harper (English grammar checker):" -ForegroundColor DarkGray
+        Write-Host "      Install Node.js, then run: npm install --prefix `"$HarperDir`"" -ForegroundColor DarkGray
     }
 }
 

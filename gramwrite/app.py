@@ -65,7 +65,7 @@ C_COPY_BTN = QColor(50, 180, 120)
 
 
 class SignalBridge(QObject):
-    correction_ready = pyqtSignal(str, str, str, str)   # original, correction, confidence, diff_html
+    correction_ready = pyqtSignal(str, str, str, str, str)   # original, correction, confidence, diff_html, element_type
     state_changed = pyqtSignal(str)           # idle | processing | alert | error
     backend_status = pyqtSignal(str)          # status message
 
@@ -96,6 +96,7 @@ class FloatingDot(QWidget):
         self._current_original: Optional[str] = None
         self._current_confidence: str = "LOW"
         self._current_diff_html: str = ""
+        self._current_element_type: str = "dialogue"
 
         self._init_window()
         self._init_pulse_timer()
@@ -110,12 +111,16 @@ class FloatingDot(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        if hasattr(Qt.WidgetAttribute, "WA_MacAlwaysShowToolWindow"):
+            self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
         self.setFixedSize(self._dot_size + 8, self._dot_size + 8)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         # Position bottom-right of primary screen
-        screen = QGuiApplication.primaryScreen().geometry()
-        self.move(screen.width() - 80, screen.height() - 120)
+        screen = QGuiApplication.primaryScreen().availableGeometry()
+        target_x = screen.x() + screen.width() - 80
+        target_y = screen.y() + screen.height() - 120
+        self.move(target_x, target_y)
 
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(16)
@@ -231,11 +236,12 @@ class FloatingDot(QWidget):
             self._color = QColor(C_ERROR)
         self.update()
 
-    def _on_correction_ready(self, original: str, correction: str, confidence: str, diff_html: str):
+    def _on_correction_ready(self, original: str, correction: str, confidence: str, diff_html: str, element_type: str):
         self._current_original = original
         self._current_suggestion = correction
         self._current_confidence = confidence
         self._current_diff_html = diff_html
+        self._current_element_type = element_type
         self._on_state_changed("alert")
 
     # ── Mouse ─────────────────────────────────────────────────────────────────
@@ -270,7 +276,8 @@ class FloatingDot(QWidget):
                 self._current_original or "",
                 self._current_suggestion,
                 self._current_confidence,
-                self._current_diff_html
+                self._current_diff_html,
+                self._current_element_type,
             )
             # Position bubble above dot
             dot_pos = self.mapToGlobal(QPoint(0, 0))
@@ -291,8 +298,8 @@ class FloatingDot(QWidget):
 
 class SuggestionBubble(QWidget):
     """
-    Minimal correction popup.
-    Shows original vs correction, with copy button.
+    Brand-aligned correction popup.
+    Shows original vs corrected text, confidence, and copy/dismiss actions.
     """
 
     def __init__(self, bridge: SignalBridge):
@@ -307,6 +314,8 @@ class SuggestionBubble(QWidget):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        if hasattr(Qt.WidgetAttribute, "WA_MacAlwaysShowToolWindow"):
+            self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
         self.setFixedWidth(300)
 
         self._build_ui()
@@ -331,34 +340,63 @@ class SuggestionBubble(QWidget):
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(10)
 
-        # Header with Confidence
+        # Header with confidence and type
         header_layout = QHBoxLayout()
         header = QLabel("✦ GramWrite")
         header.setFont(QFont("Courier New", 9))
         header.setStyleSheet("color: rgba(120,120,130,200); letter-spacing: 2px;")
-        
+
+        self._type_badge = QLabel("DIALOGUE")
+        self._type_badge.setFont(QFont("Courier New", 8))
+        self._type_badge.setStyleSheet("""
+            background: rgba(58, 176, 120, 0.12);
+            color: rgba(58, 176, 120, 255);
+            padding: 2px 6px;
+            border-radius: 2px;
+            letter-spacing: 1px;
+        """)
+
         self._conf_dot = QLabel("●")
         self._conf_dot.setFont(QFont("Courier New", 10))
-        
+
         self._conf_label = QLabel("LOW")
         self._conf_label.setFont(QFont("Courier New", 9))
         self._conf_label.setStyleSheet("color: rgba(120,120,130,200);")
-        
+
         header_layout.addWidget(header)
         header_layout.addStretch()
+        header_layout.addWidget(self._type_badge)
         header_layout.addWidget(self._conf_dot)
         header_layout.addWidget(self._conf_label)
-        
+
         layout.addLayout(header_layout)
 
-        # Correction text
+        self._original_label = QLabel("")
+        self._original_label.setFont(QFont("Georgia", 11))
+        self._original_label.setStyleSheet("color: rgba(224, 85, 85, 255); font-style: italic; line-height: 1.5;")
+        self._original_label.setWordWrap(True)
+        self._original_label.setMaximumWidth(268)
+        layout.addWidget(self._original_label)
+
+        arrow = QLabel("↓")
+        arrow.setFont(QFont("Courier New", 10))
+        arrow.setStyleSheet("color: rgba(120,120,130,180);")
+        layout.addWidget(arrow)
+
         self._correction_label = QLabel("")
         self._correction_label.setTextFormat(Qt.TextFormat.RichText)
         self._correction_label.setFont(QFont("Georgia", 11))
-        self._correction_label.setStyleSheet("color: rgba(230, 230, 235, 255); line-height: 1.5;")
+        self._correction_label.setStyleSheet("color: rgba(58, 176, 120, 255); line-height: 1.5;")
         self._correction_label.setWordWrap(True)
         self._correction_label.setMaximumWidth(268)
         layout.addWidget(self._correction_label)
+
+        self._reason_label = QLabel("")
+        self._reason_label.setFont(QFont("Courier New", 9))
+        self._reason_label.setStyleSheet("color: rgba(120,120,130,200); line-height: 1.5;")
+        self._reason_label.setWordWrap(True)
+        self._reason_label.setMaximumWidth(268)
+        layout.addWidget(self._reason_label)
 
         # Divider
         divider = QWidget()
@@ -385,7 +423,7 @@ class SuggestionBubble(QWidget):
         """)
         self._dismiss_btn.clicked.connect(self.hide)
 
-        self._copy_btn = QPushButton("Copy correction")
+        self._copy_btn = QPushButton("Copy suggestion")
         self._copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._copy_btn.setStyleSheet("""
             QPushButton {
@@ -418,16 +456,40 @@ class SuggestionBubble(QWidget):
         shadow.setOffset(0, 4)
         self._container.setGraphicsEffect(shadow)
 
-    def set_content(self, original: str, correction: str, confidence: str, diff_html: str):
+    def set_content(self, original: str, correction: str, confidence: str, diff_html: str, element_type: str):
         self._correction = correction
-        
-        if diff_html:
-            self._correction_label.setText(diff_html)
+
+        original_display = original
+        correction_display = correction
+        if len(original_display) > 140:
+            original_display = original_display[:137] + "..."
+        if len(correction_display) > 140:
+            correction_display = correction_display[:137] + "..."
+
+        self._original_label.setText(f"\"{original_display}\"")
+        self._correction_label.setText(f"\"{correction_display}\"")
+        readable_type = (element_type or "dialogue").strip().lower()
+        self._type_badge.setText(readable_type.upper())
+        if readable_type == "action":
+            self._type_badge.setStyleSheet("""
+                background: rgba(201, 168, 76, 0.12);
+                color: rgba(201, 168, 76, 255);
+                padding: 2px 6px;
+                border-radius: 2px;
+                letter-spacing: 1px;
+            """)
         else:
-            display = correction
-            if len(display) > 160:
-                display = display[:157] + "…"
-            self._correction_label.setText(display)
+            self._type_badge.setStyleSheet("""
+                background: rgba(58, 176, 120, 0.12);
+                color: rgba(58, 176, 120, 255);
+                padding: 2px 6px;
+                border-radius: 2px;
+                letter-spacing: 1px;
+            """)
+
+        self._reason_label.setText(
+            f"{confidence.title()} confidence suggestion for the current {readable_type} line."
+        )
 
         self._conf_label.setText(confidence)
         if confidence == "HIGH":
@@ -443,7 +505,7 @@ class SuggestionBubble(QWidget):
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(self._correction)
         self._copy_btn.setText("Copied ✓")
-        QTimer.singleShot(1500, lambda: self._copy_btn.setText("Copy correction"))
+        QTimer.singleShot(1500, lambda: self._copy_btn.setText("Copy suggestion"))
 
 
 # ─── Async bridge thread ─────────────────────────────────────────────────────
@@ -475,7 +537,8 @@ class AsyncWorkerThread(QThread):
                     result.parsed.text,
                     result.suggestion,
                     result.confidence,
-                    result.diff_html
+                    result.diff_html,
+                    result.parsed.element.value,
                 )
                 self._bridge.state_changed.emit("alert")
             elif result.parsed.should_check:
@@ -557,15 +620,27 @@ def run_app(config: dict, show_dashboard: bool = False):
     # Dashboard (created once, shown on demand)
     dashboard = DashboardWindow(config, engine)
 
+    def _center_window(window: QWidget):
+        screen = QGuiApplication.primaryScreen()
+        if not screen:
+            return
+        available = screen.availableGeometry()
+        frame = window.frameGeometry()
+        frame.moveCenter(available.center())
+        window.move(frame.topLeft())
+
     def _show_dashboard():
+        _center_window(dashboard)
+        dashboard.showNormal()
         dashboard.show()
         dashboard.raise_()
         dashboard.activateWindow()
+        app.setActiveWindow(dashboard)
 
     dot.open_settings.connect(_show_dashboard)
 
     if show_dashboard:
-        _show_dashboard()
+        QTimer.singleShot(0, _show_dashboard)
 
     # Start async controller in background thread
     worker = AsyncWorkerThread(config, bridge)

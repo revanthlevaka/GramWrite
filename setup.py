@@ -5,11 +5,14 @@ setup.py — GramWrite package setup
 from pathlib import Path
 from setuptools import setup, find_packages
 
-readme = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
+project_root = Path(__file__).parent
+readme = (project_root / "README.md").read_text(encoding="utf-8")
+version_ns: dict[str, str] = {}
+exec((project_root / "gramwrite" / "__init__.py").read_text(encoding="utf-8"), version_ns)
 
 setup(
     name="gramwrite",
-    version="1.2.0",
+    version=version_ns["__version__"],
     description="The Invisible Editor for Screenwriters",
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -17,6 +20,16 @@ setup(
     license="MIT",
     python_requires=">=3.10",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={
+        "gramwrite": [
+            "static/dashboard.html",
+            "static/icon.png",
+            "native/GramWriteFoundationModels.swift",
+            "native/harper/package.json",
+            "native/harper/gramwrite-harper.mjs",
+        ],
+    },
     install_requires=[
         "aiohttp>=3.9.0",
         "PyQt6>=6.6.0",

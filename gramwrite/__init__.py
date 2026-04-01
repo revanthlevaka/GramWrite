@@ -3,6 +3,6 @@ GramWrite — The Invisible Editor for Screenwriters
 Local-first, Fountain-aware grammar correction sidecar.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.2.2"
 __author__ = "GramWrite Contributors"
 __license__ = "MIT"

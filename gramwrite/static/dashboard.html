@@ -10,33 +10,91 @@
             --ink: #0d0d10;
             --ink-2: #13131a;
             --ink-3: #1a1a24;
+            --ink-4: #22222e;
             --paper: #e8e4da;
             --accent: #3ab078;
+            --accent-2: #48c88a;
             --accent-dim: rgba(58, 176, 120, 0.12);
+            --red: #e05555;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-2: rgba(255, 255, 255, 0.12);
             --text: #c8c4bc;
-            --text-dim: #5a5860;
-            --serif: 'Georgia', serif;
-            --mono: 'Courier New', Courier, monospace;
+            --text-dim: #7a767f;
+            --text-ghost: rgba(200, 196, 188, 0.38);
+            --mono: "Courier Prime", "Courier New", monospace;
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            background-color: var(--ink);
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, rgba(58,176,120,0.08), transparent 30%), var(--ink);
             color: var(--text);
             font-family: var(--mono);
-            font-size: 13px;
-            margin: 0;
-            padding: 40px 20px;
+            padding: 28px;
+        }
+
+        .shell {
+            max-width: 1180px;
+            margin: 0 auto;
+            border: 1px solid var(--border-2);
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--ink-2);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55);
+        }
+
+        .chrome {
             display: flex;
+            align-items: center;
             justify-content: center;
+            position: relative;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--ink);
         }
 
-        .container {
-            max-width: 500px;
-            width: 100%;
+        .chrome-dots {
+            position: absolute;
+            left: 18px;
+            display: flex;
+            gap: 6px;
         }
 
-        header {
-            margin-bottom: 40px;
+        .chrome-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .cd-red { background: var(--red); }
+        .cd-yellow { background: #c9a84c; }
+        .cd-green { background: var(--accent); }
+
+        .chrome-title {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 680px;
+        }
+
+        .sidebar {
+            background: var(--ink);
+            border-right: 1px solid var(--border);
+            padding: 24px 0 16px;
+        }
+
+        .brand {
+            padding: 0 20px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
         }
 
         .brand-lockup {
@@ -63,102 +121,247 @@
             background: rgba(0, 0, 0, 0.38);
         }
 
-        h1 {
+        .brand-word {
             color: var(--paper);
-            font-size: 18px;
-            letter-spacing: 4px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-
-        .subtitle {
-            color: var(--text-dim);
-            font-size: 11px;
+            font-size: 14px;
             letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        .card {
-            background-color: var(--ink-2);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .section-label {
+        .brand-tagline {
             color: var(--text-dim);
             font-size: 10px;
             letter-spacing: 1px;
+        }
+
+        .nav-group {
+            color: var(--text-ghost);
+            font-size: 9px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            margin-bottom: 12px;
-            display: block;
+            padding: 8px 20px 4px;
         }
 
-        .control-group {
-            margin-bottom: 24px;
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-left: 2px solid transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
 
-        select, input, textarea {
-            background-color: var(--ink-3);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+        .nav-item:hover { background: var(--ink-3); color: var(--text); }
+        .nav-item.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        .status {
+            margin: 16px;
+            padding: 12px 14px;
+            background: var(--ink-3);
+            border: 1px solid var(--border);
             border-radius: 6px;
-            color: var(--text);
-            font-family: var(--mono);
-            font-size: 13px;
-            padding: 10px;
-            width: 100%;
-            box-sizing: border-box;
-            outline: none;
         }
 
-        select:focus, textarea:focus {
-            border-color: var(--accent);
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
         }
 
-        textarea {
-            height: 120px;
-            resize: vertical;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(58, 176, 120, 0.55);
+        }
+
+        .status-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--paper);
+        }
+
+        .status-detail {
+            font-size: 10px;
+            color: var(--text-dim);
             line-height: 1.5;
         }
 
-        .row {
+        .main {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 2px;
+            padding: 16px 24px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 8px 18px;
+            border-radius: 4px 4px 0 0;
+            border: 1px solid transparent;
+            border-bottom: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            bottom: -1px;
+        }
+
+        .tab:hover:not(.active) { background: var(--ink-3); color: var(--text); }
+        .tab.active {
+            color: var(--accent);
+            border-color: var(--border);
+            border-bottom-color: var(--ink-2);
+            background: var(--ink-2);
+        }
+
+        .panel {
+            display: none;
+            padding: 28px 28px 32px;
+        }
+
+        .panel.active { display: block; }
+
+        .panel-title {
+            color: var(--paper);
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .panel-copy {
+            color: var(--text-dim);
+            font-size: 11px;
+            line-height: 1.6;
+            max-width: 720px;
+            margin-bottom: 24px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .settings-full { grid-column: 1 / -1; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-label {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .form-hint {
+            color: var(--text-ghost);
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: var(--ink);
+            border: 1px solid var(--border-2);
+            border-radius: 5px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 10px 14px;
+            outline: none;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: rgba(58,176,120,0.45);
+        }
+
+        .form-textarea {
+            min-height: 180px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        .form-select-wrap { position: relative; }
+        .form-select-wrap::after {
+            content: "▾";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-dim);
+            font-size: 10px;
+        }
+
+        .form-select {
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .inline-row {
+            display: flex;
+            gap: 8px;
             align-items: center;
         }
 
         .btn {
-            background-color: var(--accent);
-            border: none;
-            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--accent);
             color: white;
-            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 22px;
             font-family: var(--mono);
-            font-size: 12px;
-            font-weight: bold;
-            padding: 12px 24px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.1s, background 0.2s;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
         }
 
-        .btn:hover {
-            background-color: #48c88a;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-refresh {
+        .btn:hover { background: var(--accent-2); transform: translateY(-1px); }
+        .btn-secondary {
             background: transparent;
             color: var(--text-dim);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 8px 12px;
+            border: 1px solid var(--border);
+            padding: 9px 12px;
             font-size: 10px;
         }
 
-        .slider-container {
+        .save-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .sensitivity-row {
             display: flex;
             align-items: center;
             gap: 16px;
@@ -166,167 +369,520 @@
 
         input[type="range"] {
             flex: 1;
+            appearance: none;
+            height: 4px;
+            border-radius: 999px;
+            background: var(--ink-4);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        .sensitivity-value {
+            min-width: 56px;
+            text-align: right;
+            color: var(--accent);
+            font-size: 11px;
+        }
+
+        .toggle-card, .info-card {
+            background: var(--ink-3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .toggle-copy {
+            color: var(--text);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .toggle-desc, .info-card p {
+            color: var(--text-dim);
+            font-size: 10px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .checkbox-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        input[type="checkbox"] {
+            margin-top: 2px;
             accent-color: var(--accent);
         }
 
-        .status-pill {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            background: var(--accent-dim);
+        .info-card code {
             color: var(--accent);
-            text-transform: uppercase;
+            background: rgba(58,176,120,0.08);
+            border: 1px solid rgba(58,176,120,0.12);
+            border-radius: 4px;
+            padding: 2px 6px;
         }
 
-        .hidden { display: none; }
-
         footer {
-            margin-top: 40px;
-            text-align: center;
+            margin-top: 20px;
             color: var(--text-dim);
             font-size: 10px;
+            text-align: right;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 14px; }
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .settings-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="brand-lockup">
-                <div class="brand-mark"><div class="brand-mark-inner"></div></div>
-                <div class="brand-copy">
-                    <h1>GramWrite</h1>
-                    <div class="subtitle">The Invisible Editor</div>
-                </div>
+    <div class="shell">
+        <div class="chrome">
+            <div class="chrome-dots">
+                <div class="chrome-dot cd-red"></div>
+                <div class="chrome-dot cd-yellow"></div>
+                <div class="chrome-dot cd-green"></div>
             </div>
-        </header>
-
-        <div class="card">
-            <div class="control-group">
-                <label class="section-label">LLM Backend</label>
-                <select id="backend">
-                    <option value="auto">Auto-detect</option>
-                    <option value="ollama">Ollama</option>
-                    <option value="lmstudio">LM Studio</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label class="section-label">Active Model</label>
-                <div class="row">
-                    <input type="text" id="model" placeholder="qwen3.5:0.8b">
-                    <button class="btn btn-refresh" id="refresh-models">Refresh</button>
-                </div>
-                <select id="model-list" class="hidden" style="margin-top: 8px;"></select>
-            </div>
-
-            <div class="control-group">
-                <label class="section-label">Correction Sensitivity</label>
-                <div class="slider-container">
-                    <input type="range" id="sensitivity" min="0" max="2" step="1">
-                    <span id="sensitivity-label">Medium</span>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label class="section-label">Strict Screenplay Mode</label>
-                <div class="row">
-                    <input type="checkbox" id="strict_mode" style="width: auto;">
-                    <span style="font-size: 11px; color: var(--text-dim);">Ignore non-Action/Dialogue blocks</span>
-                </div>
-            </div>
+            <div class="chrome-title">GramWrite — Settings</div>
         </div>
 
-        <div class="card">
-            <div class="control-group">
-                <label class="section-label">System Prompt</label>
-                <textarea id="system_prompt"></textarea>
-            </div>
-        </div>
+        <div class="layout">
+            <aside class="sidebar">
+                <div class="brand">
+                    <div class="brand-lockup">
+                        <div class="brand-mark"><div class="brand-mark-inner"></div></div>
+                        <div class="brand-copy">
+                            <div class="brand-word">GramWrite</div>
+                            <div class="brand-tagline">The Invisible Editor</div>
+                        </div>
+                    </div>
+                </div>
 
-        <div style="display: flex; justify-content: flex-end;">
-            <button class="btn" id="save-btn">Save Settings</button>
-        </div>
+                <div class="nav-group">Settings</div>
+                <div class="nav-item active" data-tab="general">General</div>
+                <div class="nav-item" data-tab="model">Model</div>
+                <div class="nav-item" data-tab="appearance">Appearance</div>
+                <div class="nav-item" data-tab="advanced">Advanced</div>
 
-        <footer>
-            GramWrite v1.2.0 &middot; Localhost Dashboard
-        </footer>
+                <div class="nav-group">System</div>
+                <div class="nav-item" data-tab="about">About</div>
+
+                <div class="status">
+                    <div class="status-row">
+                        <div class="status-dot"></div>
+                        <div class="status-label" id="status-label">AUTO · CONFIGURED</div>
+                    </div>
+                    <div class="status-detail" id="status-detail">qwen3.5:0.8b · localhost dashboard active</div>
+                </div>
+            </aside>
+
+            <main class="main">
+                <div class="tabs">
+                    <div class="tab active" data-tab="general">General</div>
+                    <div class="tab" data-tab="model">Model</div>
+                    <div class="tab" data-tab="appearance">Appearance</div>
+                    <div class="tab" data-tab="advanced">Advanced</div>
+                    <div class="tab" data-tab="about">About</div>
+                </div>
+
+                <section class="panel active" id="panel-general">
+                    <div class="panel-title">General</div>
+                    <div class="panel-copy">The everyday controls for how GramWrite watches, waits, and intervenes while you write.</div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">Grammar Backend</label>
+                            <div class="form-select-wrap">
+                                <select class="form-select" id="backend">
+                                    <option value="auto">auto (detect)</option>
+                                    <option value="ollama">ollama</option>
+                                    <option value="lmstudio">lmstudio</option>
+                                    <option value="harper">harper</option>
+                                    <option value="foundation_models" id="foundation-backend-option" hidden>apple foundation models</option>
+                                </select>
+                            </div>
+                            <div class="form-hint" id="backend-hint">Auto-detects whichever supported local backend is available. Harper is a fast local English grammar option.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Debounce (seconds)</label>
+                            <input class="form-input" id="debounce_seconds" type="number" min="0.1" step="0.1">
+                            <div class="form-hint">Wait time after typing stops before analysis begins.</div>
+                        </div>
+
+                        <div class="form-group settings-full">
+                            <label class="form-label">Correction Sensitivity</label>
+                            <div class="sensitivity-row">
+                                <input type="range" id="sensitivity" min="0" max="2" step="1">
+                                <div class="sensitivity-value" id="sensitivity-label">Medium</div>
+                            </div>
+                            <div class="form-hint">Low = major errors only · Medium = standard · High = catch everything.</div>
+                        </div>
+
+                        <div class="form-group settings-full">
+                            <label class="form-label">Behaviour</label>
+                            <div class="toggle-card">
+                                <label class="checkbox-row">
+                                    <input type="checkbox" id="strict_mode">
+                                    <span>
+                                        <div class="toggle-copy">Strict Screenplay Mode</div>
+                                        <div class="toggle-desc">Checks Action and Dialogue lines only. Sluglines and transitions are skipped.</div>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="save-row">
+                        <button class="btn" data-save>Save Settings</button>
+                    </div>
+                </section>
+
+                <section class="panel" id="panel-model">
+                    <div class="panel-title">Model</div>
+                    <div class="panel-copy">Backend selection, active model choice, and the exact system instructions sent with every correction.</div>
+                    <div class="settings-grid">
+                        <div class="form-group settings-full">
+                            <label class="form-label">Active Model</label>
+                            <div class="inline-row">
+                                <input class="form-input" id="model" type="text" placeholder="qwen3.5:0.8b">
+                                <button class="btn btn-secondary" id="refresh-models">Refresh</button>
+                            </div>
+                            <select class="form-select" id="model-list" style="display:none;"></select>
+                            <div class="form-hint" id="model-hint">Discover available models from Ollama and LM Studio. Harper uses a fixed local English model.</div>
+                        </div>
+
+                        <div class="form-group settings-full">
+                            <label class="form-label">System Prompt</label>
+                            <textarea class="form-textarea" id="system_prompt"></textarea>
+                            <div class="form-hint">Keeps corrections grammar-only and screenplay-aware. Edit carefully.</div>
+                        </div>
+                    </div>
+                    <div class="save-row">
+                        <button class="btn" data-save>Save Settings</button>
+                    </div>
+                </section>
+
+                <section class="panel" id="panel-appearance">
+                    <div class="panel-title">Appearance</div>
+                    <div class="panel-copy">A quick reference to the visual system the shipped dashboard and correction UI now follow.</div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">Palette</label>
+                            <div class="info-card">
+                                <p><code>Ink</code> #0d0d10</p>
+                                <p><code>Surface</code> #1a1a24</p>
+                                <p><code>Signal Green</code> #3ab078</p>
+                                <p><code>Aged Paper</code> #e8e4da</p>
+                            </div>
+                            <div class="form-hint">The dashboard and floating correction UI use the same brand palette.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Dot States</label>
+                            <div class="info-card">
+                                <p>Idle: dark grey static dot</p>
+                                <p>Processing: blue pulse</p>
+                                <p>Alert: signal green</p>
+                                <p>Error: red state</p>
+                            </div>
+                            <div class="form-hint">The floating dot remains the primary always-on surface.</div>
+                        </div>
+
+                        <div class="form-group settings-full">
+                            <label class="form-label">Typography</label>
+                            <div class="info-card">
+                                <p>Display moments use uppercase brand styling.</p>
+                                <p>UI controls use a monospace voice.</p>
+                                <p>Long-form editorial copy stays restrained and human.</p>
+                            </div>
+                            <div class="form-hint">Reference only. These are not editable runtime settings.</div>
+                        </div>
+                    </div>
+                    <div class="save-row">
+                        <button class="btn" data-save>Save Settings</button>
+                    </div>
+                </section>
+
+                <section class="panel" id="panel-advanced">
+                    <div class="panel-title">Advanced</div>
+                    <div class="panel-copy">Low-level performance and localhost controls for local development and debugging.</div>
+                    <div class="settings-grid">
+                        <div class="form-group">
+                            <label class="form-label">Max Context Chars</label>
+                            <input class="form-input" id="max_context_chars" type="number" min="50" step="10">
+                            <div class="form-hint">How much surrounding text GramWrite inspects around the cursor.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Dashboard Port</label>
+                            <input class="form-input" id="dashboard_port" type="number" min="1" step="1">
+                            <div class="form-hint">Used by the localhost dashboard server.</div>
+                        </div>
+
+                        <div class="form-group settings-full">
+                            <label class="form-label">Privacy Pledge</label>
+                            <div class="info-card">
+                                <p>No accounts. No telemetry. No cloud.</p>
+                                <p>Your screenplay stays on your machine.</p>
+                                <p>Every correction runs on local hardware.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="save-row">
+                        <button class="btn" data-save>Save Settings</button>
+                    </div>
+                </section>
+
+                <section class="panel" id="panel-about">
+                    <div class="panel-title">About</div>
+                    <div class="panel-copy">Version, authorship, and the product philosophy behind the floating-dot experience.</div>
+                    <div class="settings-grid">
+                        <div class="form-group settings-full">
+                            <div class="info-card">
+                                <p>Version 1.2.2 · MIT License</p>
+                                <p>Built by Revanth Levaka.</p>
+                                <p>A local-first grammar sidecar for screenwriters.</p>
+                                <p>Optional Harper backend powered by Harper from Automattic.</p>
+                                <p>GramWrite makes zero external network calls.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
     </div>
 
+    <footer>GramWrite v1.2.2 · Localhost Dashboard</footer>
+
     <script>
+        const FOUNDATION_BACKEND = "foundation_models";
+        const FOUNDATION_MODEL = "apple.foundation";
+        const HARPER_BACKEND = "harper";
+        const HARPER_MODEL = "harper.english";
         const sensitivityLabels = ["Low", "Medium", "High"];
         const sensitivityMap = {0: "low", 1: "medium", 2: "high"};
-        const sensitivityReverse = {"low": 0, "medium": 1, "high": 2};
+        const sensitivityReverse = {low: 0, medium: 1, high: 2};
+        let runtimeCapabilities = null;
+
+        function backendLabel(backend) {
+            if (backend === FOUNDATION_BACKEND) return "APPLE FOUNDATION";
+            if (backend === HARPER_BACKEND) return "HARPER";
+            return (backend || "auto").toUpperCase();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll(".nav-item").forEach((item) => {
+                item.classList.toggle("active", item.dataset.tab === tab);
+            });
+            document.querySelectorAll(".tab").forEach((item) => {
+                item.classList.toggle("active", item.dataset.tab === tab);
+            });
+            document.querySelectorAll(".panel").forEach((panel) => {
+                panel.classList.toggle("active", panel.id === `panel-${tab}`);
+            });
+        }
+
+        function updateStatus() {
+            const backend = document.getElementById("backend").value || "auto";
+            const model = document.getElementById("model").value || "qwen3.5:0.8b";
+            document.getElementById("status-label").innerText = `${backendLabel(backend)} · CONFIGURED`;
+            if (backend === FOUNDATION_BACKEND) {
+                document.getElementById("status-detail").innerText = "apple.foundation · on-device Apple Intelligence model";
+            } else if (backend === HARPER_BACKEND) {
+                document.getElementById("status-detail").innerText = "harper.english · local English grammar checker";
+            } else {
+                document.getElementById("status-detail").innerText = `${model} · localhost dashboard active`;
+            }
+        }
+
+        async function loadCapabilities() {
+            try {
+                const resp = await fetch("/api/capabilities");
+                runtimeCapabilities = await resp.json();
+            } catch (err) {
+                console.error("Failed to load runtime capabilities:", err);
+                runtimeCapabilities = {
+                    platform: "unknown",
+                    apple_foundation_models_supported: false,
+                    apple_foundation_models_available: false,
+                    apple_foundation_models_reason: null,
+                    harper_supported: true,
+                    harper_available: false,
+                    harper_reason: null
+                };
+            }
+
+            const foundationOption = document.getElementById("foundation-backend-option");
+            const backendHint = document.getElementById("backend-hint");
+            const appleSupported = !!runtimeCapabilities.apple_foundation_models_supported;
+
+            foundationOption.hidden = !appleSupported;
+            let hint = "Auto-detects whichever supported local backend is available. Harper is a fast local English grammar option.";
+            if (runtimeCapabilities.harper_reason) {
+                hint += ` Harper status: ${runtimeCapabilities.harper_reason}.`;
+            }
+            if (appleSupported) {
+                hint += " Apple Foundation Models can also run on-device on supported Macs.";
+                if (!runtimeCapabilities.apple_foundation_models_available && runtimeCapabilities.apple_foundation_models_reason) {
+                    hint += ` Current Apple status: ${runtimeCapabilities.apple_foundation_models_reason}.`;
+                }
+            }
+            backendHint.innerText = hint;
+        }
+
+        function applyBackendUiState() {
+            const backend = document.getElementById("backend").value || "auto";
+            const modelInput = document.getElementById("model");
+            const modelList = document.getElementById("model-list");
+            const refreshButton = document.getElementById("refresh-models");
+            const modelHint = document.getElementById("model-hint");
+            const usingFoundation = backend === FOUNDATION_BACKEND;
+            const usingHarper = backend === HARPER_BACKEND;
+
+            if (usingFoundation || usingHarper) {
+                const fixedModel = usingFoundation ? FOUNDATION_MODEL : HARPER_MODEL;
+                if (modelInput.value && modelInput.value !== fixedModel) {
+                    modelInput.dataset.lastLocalModel = modelInput.value;
+                }
+                modelInput.value = fixedModel;
+                modelInput.readOnly = true;
+                refreshButton.disabled = true;
+                refreshButton.innerText = "Apple managed";
+                modelList.style.display = "none";
+
+                if (usingFoundation) {
+                    refreshButton.innerText = "Apple managed";
+                    if (runtimeCapabilities?.apple_foundation_models_available) {
+                        modelHint.innerText = "Apple manages the on-device model automatically when this backend is selected.";
+                    } else if (runtimeCapabilities?.apple_foundation_models_reason) {
+                        modelHint.innerText = `Apple Foundation Models is selected, but macOS currently reports it unavailable: ${runtimeCapabilities.apple_foundation_models_reason}.`;
+                    } else {
+                        modelHint.innerText = "Apple manages the on-device model automatically when this backend is selected.";
+                    }
+                } else {
+                    refreshButton.innerText = "Harper managed";
+                    if (runtimeCapabilities?.harper_available) {
+                        modelHint.innerText = "Harper uses a fixed local English grammar model when this backend is selected.";
+                    } else if (runtimeCapabilities?.harper_reason) {
+                        modelHint.innerText = `Harper is selected, but it is currently unavailable: ${runtimeCapabilities.harper_reason}.`;
+                    } else {
+                        modelHint.innerText = "Harper uses a fixed local English grammar model when this backend is selected.";
+                    }
+                }
+            } else {
+                if ((modelInput.value === FOUNDATION_MODEL || modelInput.value === HARPER_MODEL || !modelInput.value) && modelInput.dataset.lastLocalModel) {
+                    modelInput.value = modelInput.dataset.lastLocalModel;
+                }
+                modelInput.readOnly = false;
+                refreshButton.disabled = false;
+                refreshButton.innerText = "Refresh";
+                modelHint.innerText = "Discover available models from Ollama and LM Studio. Harper uses a fixed local English model.";
+            }
+
+            updateStatus();
+        }
 
         async function loadConfig() {
             try {
-                const resp = await fetch('/api/config');
+                await loadCapabilities();
+                const resp = await fetch("/api/config");
                 const config = await resp.json();
-                
-                document.getElementById('backend').value = config.backend || 'auto';
-                document.getElementById('model').value = config.model || '';
-                document.getElementById('system_prompt').value = config.system_prompt || '';
-                document.getElementById('strict_mode').checked = !!config.strict_mode;
-                
-                const sensVal = sensitivityReverse[config.sensitivity] ?? 1;
-                document.getElementById('sensitivity').value = sensVal;
-                document.getElementById('sensitivity-label').innerText = sensitivityLabels[sensVal];
+
+                document.getElementById("backend").value = config.backend || "auto";
+                document.getElementById("model").value = config.model || "";
+                document.getElementById("system_prompt").value = config.system_prompt || "";
+                document.getElementById("strict_mode").checked = config.strict_mode !== false;
+                document.getElementById("debounce_seconds").value = config.debounce_seconds ?? 2.0;
+                document.getElementById("max_context_chars").value = config.max_context_chars ?? 300;
+                document.getElementById("dashboard_port").value = config.dashboard_port ?? 7878;
+
+                const sensitivityIndex = sensitivityReverse[config.sensitivity] ?? 1;
+                document.getElementById("sensitivity").value = sensitivityIndex;
+                document.getElementById("sensitivity-label").innerText = sensitivityLabels[sensitivityIndex];
+                applyBackendUiState();
             } catch (err) {
                 console.error("Failed to load config:", err);
             }
         }
 
-        async function saveConfig() {
-            const saveBtn = document.getElementById('save-btn');
-            saveBtn.innerText = "Saving...";
-            
+        async function saveConfig(event) {
+            const button = event?.currentTarget;
+            if (button) button.innerText = "Saving...";
+
             const config = {
-                backend: document.getElementById('backend').value,
-                model: document.getElementById('model').value,
-                sensitivity: sensitivityMap[document.getElementById('sensitivity').value],
-                system_prompt: document.getElementById('system_prompt').value,
-                strict_mode: document.getElementById('strict_mode').checked
+                backend: document.getElementById("backend").value,
+                model: document.getElementById("backend").value === FOUNDATION_BACKEND
+                    ? FOUNDATION_MODEL
+                    : document.getElementById("model").value,
+                sensitivity: sensitivityMap[document.getElementById("sensitivity").value],
+                system_prompt: document.getElementById("system_prompt").value,
+                strict_mode: document.getElementById("strict_mode").checked,
+                debounce_seconds: parseFloat(document.getElementById("debounce_seconds").value || "2.0"),
+                max_context_chars: parseInt(document.getElementById("max_context_chars").value || "300", 10),
+                dashboard_port: parseInt(document.getElementById("dashboard_port").value || "7878", 10)
             };
 
             try {
-                const resp = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const resp = await fetch("/api/config", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
                     body: JSON.stringify(config)
                 });
-                
+
                 if (resp.ok) {
-                    saveBtn.innerText = "Saved ✓";
-                    setTimeout(() => saveBtn.innerText = "Save Settings", 2000);
-                } else {
-                    saveBtn.innerText = "Error Saving";
-                    setTimeout(() => saveBtn.innerText = "Save Settings", 2000);
+                    updateStatus();
+                    if (button) {
+                        button.innerText = "Saved ✓";
+                        setTimeout(() => button.innerText = "Save Settings", 1800);
+                    }
+                } else if (button) {
+                    button.innerText = "Error Saving";
+                    setTimeout(() => button.innerText = "Save Settings", 1800);
                 }
             } catch (err) {
                 console.error("Failed to save config:", err);
-                saveBtn.innerText = "Error Saving";
+                if (button) button.innerText = "Error Saving";
             }
         }
 
         async function refreshModels() {
-            const btn = document.getElementById('refresh-models');
-            const modelList = document.getElementById('model-list');
-            const modelInput = document.getElementById('model');
-            
+            const btn = document.getElementById("refresh-models");
+            const modelList = document.getElementById("model-list");
+            const modelInput = document.getElementById("model");
+
+            if (document.getElementById("backend").value === FOUNDATION_BACKEND) {
+                applyBackendUiState();
+                return;
+            }
+
             btn.innerText = "...";
             try {
-                const resp = await fetch('/api/models');
+                const resp = await fetch("/api/models");
                 const models = await resp.json();
-                
+
                 if (models && models.length > 0) {
-                    modelList.innerHTML = '';
-                    models.forEach(m => {
-                        const opt = document.createElement('option');
-                        opt.value = m;
-                        opt.innerText = m;
+                    modelList.innerHTML = "";
+                    models.forEach((model) => {
+                        const opt = document.createElement("option");
+                        opt.value = model;
+                        opt.innerText = model;
                         modelList.appendChild(opt);
                     });
-                    modelList.classList.remove('hidden');
-                    modelList.onchange = (e) => modelInput.value = e.target.value;
+                    modelList.style.display = "block";
+                    modelList.onchange = (e) => {
+                        modelInput.value = e.target.value;
+                        updateStatus();
+                    };
                 }
             } catch (err) {
                 console.error("Failed to fetch models:", err);
@@ -334,12 +890,18 @@
             btn.innerText = "Refresh";
         }
 
-        document.getElementById('sensitivity').oninput = (e) => {
-            document.getElementById('sensitivity-label').innerText = sensitivityLabels[e.target.value];
-        };
-
-        document.getElementById('save-btn').onclick = saveConfig;
-        document.getElementById('refresh-models').onclick = refreshModels;
+        document.querySelectorAll(".nav-item, .tab").forEach((item) => {
+            item.addEventListener("click", () => switchTab(item.dataset.tab));
+        });
+        document.querySelectorAll("[data-save]").forEach((button) => {
+            button.addEventListener("click", saveConfig);
+        });
+        document.getElementById("refresh-models").addEventListener("click", refreshModels);
+        document.getElementById("backend").addEventListener("change", applyBackendUiState);
+        document.getElementById("model").addEventListener("input", updateStatus);
+        document.getElementById("sensitivity").addEventListener("input", (e) => {
+            document.getElementById("sensitivity-label").innerText = sensitivityLabels[e.target.value];
+        });
 
         window.onload = loadConfig;
     </script>

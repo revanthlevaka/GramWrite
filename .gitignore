@@ -36,6 +36,11 @@ htmlcov/
 *.swo
 *~
 
+# Node
+node_modules/
+package-lock.json
+gramwrite/native/GramWriteFoundationModelsHelper.app/
+
 # OS
 .DS_Store
 Thumbs.db

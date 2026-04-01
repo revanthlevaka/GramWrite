@@ -13,12 +13,15 @@ No rewriting your voice.
 
 ---
 
-## What's New in v1.2
+## What's New in v1.2.2
 - **Inline Word-Level Diffs**: Suggestions now highlight exactly which words changed using color-coded text.
 - **Confidence Indicators**: Every suggestion includes a built-in confidence score (HIGH/MEDIUM/LOW) visually mapped to a color indicator near the header.
 - **Strict Screenplay Mode**: Configurable strict mode guarantees elements like character names, parentheticals, and sluglines are 100% ignored.
 - **Present Tense Enforcement**: GramWrite heuristically detects past tense action lines and attempts to convert them to present tense.
 - **Multilingual Support**: The underlying LLM is now instructed to detect the original language and correct it directly without translating.
+- **Apple Foundation Models Toggle**: macOS users can now choose Apple's on-device Foundation Models backend instead of Ollama or LM Studio when their Mac supports Apple Intelligence.
+- **Harper Backend Option**: Harper is now available as an optional fast local English grammar backend alongside Ollama, LM Studio, and Apple Foundation Models.
+- **DMG Packaging Workflow**: macOS builds can now be wrapped as a drag-and-drop `.dmg` for non-technical installs.
 
 ---
 
@@ -77,7 +80,7 @@ It only checks what matters:
 
 Your script stays yours.
 
-* Runs entirely on **Ollama or LM Studio**
+* Runs entirely on **Ollama, LM Studio, Harper, or Apple Foundation Models on supported Macs**
 * No telemetry
 * No accounts
 * No internet calls
@@ -120,7 +123,7 @@ That’s the entire interaction.
 ```id="arch"
 watcher.py         → OS-level text extraction  
 fountain_parser.py → Screenplay-aware classification  
-engine.py          → Local LLM inference  
+engine.py          → Local grammar backend inference  
 controller.py      → Async orchestration (debounce, queue)  
 app.py             → Floating UI (PyQt6)  
 ```
@@ -129,7 +132,7 @@ app.py             → Floating UI (PyQt6)
 
 * **Watcher** captures active window text
 * **Parser** identifies screenplay elements
-* **Engine** runs local inference
+* **Engine** runs the selected local grammar backend
 * **Controller** ensures smooth async flow
 * **UI** displays minimal suggestions
 
@@ -141,11 +144,23 @@ app.py             → Floating UI (PyQt6)
 - One of:
   - [Ollama](https://ollama.com) with `qwen3.5:0.8b` (recommended)
   - [LM Studio](https://lmstudio.ai) with any small model loaded
+  - [Harper](https://github.com/Automattic/harper) via the bundled `harper.js` helper and Node.js
+  - Apple Foundation Models on an Apple Intelligence-enabled Mac
 - macOS 12+ / Windows 10+ / Ubuntu 20.04+
 
 ---
 
 ## Installation
+
+### macOS Drag-and-Drop
+
+For filmmaker-friendly installs, ship the packaged app as a DMG:
+
+```bash
+./scripts/build_macos_dmg.sh
+```
+
+That creates `dist/GramWrite-1.2.2.dmg`, which opens as a standard drag-and-drop installer with `GramWrite.app` plus an `Applications` shortcut.
 
 ### macOS / Linux
 
@@ -172,16 +187,26 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+If you want the Harper backend, also install the helper dependencies:
+
+```bash
+npm install --prefix gramwrite/native/harper
+```
+
 ---
 
 ## Usage
 
-1. **Start your LLM backend**
+1. **Start your preferred backend**
    ```bash
    ollama serve
    # and ensure your model is pulled:
    ollama pull qwen3.5:0.8b
    ```
+
+   On supported Macs, you can skip Ollama and LM Studio entirely by selecting `foundation_models` in the dashboard. That backend uses Apple's on-device Foundation Models and does not need a local HTTP server.
+
+   If you install the optional Harper helper, you can also select `harper` in the dashboard. Harper is English-only and does not require a local HTTP server.
 
 2. **Launch GramWrite**
    ```bash
@@ -251,9 +276,40 @@ max_context_chars: 300
 dashboard_port: 7878
 ```
 
+For Apple's on-device backend on macOS:
+
+```yaml
+backend: foundation_models
+model: apple.foundation
+```
+
+For the Harper backend:
+
+```yaml
+backend: harper
+model: harper.english
+```
+
 You can also customize the system prompt in the dashboard or directly in `config.yaml`.
+Harper ignores the system prompt because it uses its own local grammar engine.
 
 > **Tip:** All settings are saved to `config.yaml` automatically when you click **Save Settings** in the dashboard.
+
+## macOS Packaging
+
+Build a local `.app` bundle:
+
+```bash
+./scripts/build_macos_app.sh
+```
+
+Build a drag-and-drop `.dmg`:
+
+```bash
+./scripts/build_macos_dmg.sh
+```
+
+On macOS, those scripts build and sign a bundled Foundation Models helper app so the Apple backend can work inside the packaged GramWrite app without asking end users to install developer tools.
 ---
 
 ## Performance
@@ -299,6 +355,11 @@ Future direction:
 ## Contributing
 
 We welcome focused contributions.
+
+## Credits
+
+* Harper integration is powered by [Harper](https://github.com/Automattic/harper) from Automattic.
+* The bundled Harper helper uses the `harper.js` package, which is licensed under Apache-2.0.
 
 ### What we want:
 

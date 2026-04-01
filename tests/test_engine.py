@@ -1,6 +1,9 @@
 import pytest
 from aioresponses import aioresponses
 from gramwrite.engine import GramEngine, Backend, OLLAMA_BASE
+from gramwrite.foundation_models import FoundationModelsStatus
+from gramwrite.harper import HarperStatus
+from pathlib import Path
 
 @pytest.fixture
 def engine():
@@ -77,3 +80,146 @@ async def test_engine_connection_error(engine):
         assert result.has_correction is False
         assert "Failed to connect" in result.error
         await engine.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_detects_foundation_models_backend():
+    engine = GramEngine(
+        {
+            "backend": "foundation_models",
+            "model": "apple.foundation",
+            "system_prompt": "Correct grammar only.",
+        }
+    )
+
+    async def fake_status(force_refresh: bool = False):
+        return FoundationModelsStatus(
+            supported=True,
+            available=True,
+            helper_path=Path("/tmp/gramwrite-foundation-models"),
+        )
+
+    engine._foundation.status = fake_status
+    backend = await engine.detect_backend()
+    assert backend == Backend.FOUNDATION_MODELS
+    await engine.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_foundation_models_correction():
+    engine = GramEngine(
+        {
+            "backend": "foundation_models",
+            "model": "apple.foundation",
+            "system_prompt": "Correct grammar only.",
+        }
+    )
+
+    async def fake_status(force_refresh: bool = False):
+        return FoundationModelsStatus(
+            supported=True,
+            available=True,
+            helper_path=Path("/tmp/gramwrite-foundation-models"),
+        )
+
+    async def fake_correct(text: str, instructions: str):
+        assert text == "He walk to the store."
+        assert "Correct grammar only." in instructions
+        return "He walks to the store."
+
+    engine._foundation.status = fake_status
+    engine._foundation.correct = fake_correct
+
+    result = await engine.correct("He walk to the store.")
+    assert result.backend == Backend.FOUNDATION_MODELS
+    assert result.has_correction is True
+    assert result.correction == "He walks to the store."
+    await engine.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_detects_harper_backend():
+    engine = GramEngine(
+        {
+            "backend": "harper",
+            "model": "harper.english",
+            "system_prompt": "Correct grammar only.",
+        }
+    )
+
+    async def fake_status(force_refresh: bool = False):
+        return HarperStatus(
+            supported=True,
+            available=True,
+            helper_path=Path("/tmp/gramwrite-harper.mjs"),
+            node_path="/usr/bin/node",
+        )
+
+    engine._harper.status = fake_status
+    backend = await engine.detect_backend()
+    assert backend == Backend.HARPER
+    await engine.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_harper_correction():
+    engine = GramEngine(
+        {
+            "backend": "harper",
+            "model": "harper.english",
+            "system_prompt": "Ignored by Harper.",
+        }
+    )
+
+    async def fake_status(force_refresh: bool = False):
+        return HarperStatus(
+            supported=True,
+            available=True,
+            helper_path=Path("/tmp/gramwrite-harper.mjs"),
+            node_path="/usr/bin/node",
+        )
+
+    async def fake_correct(text: str):
+        assert text == "He walk to the store."
+        return "He walks to the store."
+
+    engine._harper.status = fake_status
+    engine._harper.correct = fake_correct
+
+    result = await engine.correct("He walk to the store.")
+    assert result.backend == Backend.HARPER
+    assert result.has_correction is True
+    assert result.correction == "He walks to the store."
+    await engine.close()
+
+
+@pytest.mark.asyncio
+async def test_engine_harper_strips_action_prefix():
+    engine = GramEngine(
+        {
+            "backend": "harper",
+            "model": "harper.english",
+            "system_prompt": "Ignored by Harper.",
+        }
+    )
+
+    async def fake_status(force_refresh: bool = False):
+        return HarperStatus(
+            supported=True,
+            available=True,
+            helper_path=Path("/tmp/gramwrite-harper.mjs"),
+            node_path="/usr/bin/node",
+        )
+
+    async def fake_correct(text: str):
+        assert text == "He walk to the store."
+        return "He walks to the store."
+
+    engine._harper.status = fake_status
+    engine._harper.correct = fake_correct
+
+    result = await engine.correct("[ACTION LINE — stylistic fragments are intentional]\nHe walk to the store.")
+    assert result.backend == Backend.HARPER
+    assert result.has_correction is True
+    assert result.correction == "He walks to the store."
+    await engine.close()
