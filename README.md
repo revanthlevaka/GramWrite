@@ -100,7 +100,29 @@ GramWrite does not try to be creative.
 > It fixes mistakes. That’s it.
 
 ---
+## Supported Fountain Syntax
 
+GramWrite's built-in parser understands standard Fountain screenplay syntax. It correctly identifies and classifies screenplay elements so grammar checking is applied only where appropriate.
+
+| Syntax | Example | Behavior |
+|--------|---------|----------|
+| **Sluglines** | `INT. OFFICE - DAY` | Detected via `INT.`, `EXT.`, `EST.`, `I/E` prefixes. Never checked. |
+| **Character Names** | `JOHN CARTER, JR.` | ALL CAPS with optional comma suffixes. Never checked. |
+| **Dialogue** | `I need to tell you something.` | Tracked across multiple lines. Grammar checked by default. |
+| **Parentheticals** | `(quietly)` | Wrapped in parentheses below character names. Never checked. |
+| **Transitions** | `CUT TO:` | ALL CAPS ending with colon. Never checked. |
+| **Dual Dialogue** | `^JOHN` | Prefixed with `^` for simultaneous dialogue. Never checked. |
+| **Forced Action** | `!This is action.` | Prefixed with `!` to force action line parsing. Checked if strict mode allows. |
+| **Emphasis** | `*bold*` or `_italic_` | Preserved as spans during parsing. Checked within dialogue. |
+| **Line Breaks** | `  ` (double-space) or `<br>` | Preserved in output. |
+| **Notes** | `[[TODO: fix this scene]]` | Bracketed notes. Never checked. |
+| **Section Markers** | `# Act One` | `#`-prefixed section headers. Never checked. |
+
+### Strict Screenplay Mode
+
+When enabled, GramWrite guarantees that structural elements (sluglines, character names, parentheticals, transitions) are **100% ignored** — only dialogue and action lines receive suggestions.
+
+---
 ## How It Works
 
 ```id="flow"

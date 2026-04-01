@@ -67,3 +67,51 @@ python -m build
 twine upload dist/*
 # Users can then: pip install gramwrite
 ```
+
+## Container/CI Dependencies
+
+When running GramWrite in a headless container or CI environment, the Qt-based UI requires several system libraries that are not included in minimal base images. Without these, you'll see errors like:
+
+```
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb"
+```
+
+### Required System Packages (Debian/Ubuntu)
+
+```dockerfile
+FROM python:3.12-slim
+
+# Install Qt/X11 runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libegl1 \
+    libgl1 \
+    libxkbcommon0 \
+    libxcb-cursor0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install GramWrite
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+CMD ["python", "-m", "gramwrite"]
+```
+
+### Package Descriptions
+
+| Package | Purpose |
+|---------|---------|
+| `libegl1` | EGL display library (Qt platform plugin) |
+| `libgl1` | OpenGL library (hardware acceleration) |
+| `libxkbcommon0` | Keyboard layout handling |
+| `libxcb-cursor0` | X11 cursor support for Qt xcb plugin |
+
+### Headless Mode
+
+For CI pipelines that don't need the UI, set the `QT_QPA_PLATFORM` environment variable:
+
+```bash
+export QT_QPA_PLATFORM=offscreen
+python -m gramwrite
+```

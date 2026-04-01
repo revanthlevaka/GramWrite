@@ -29,6 +29,10 @@ class ParsedBlock:
     text: str
     should_check: bool
     reason: str  # Why we are / aren't checking this block
+    is_dual_dialogue: bool = False
+    is_forced_action: bool = False
+    emphasis_spans: list[tuple[int, int]] | None = None
+    has_line_breaks: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -36,6 +40,10 @@ class ParsedBlock:
             "text": self.text,
             "should_check": self.should_check,
             "reason": self.reason,
+            "is_dual_dialogue": self.is_dual_dialogue,
+            "is_forced_action": self.is_forced_action,
+            "emphasis_spans": self.emphasis_spans,
+            "has_line_breaks": self.has_line_breaks,
         }
 
 
@@ -51,7 +59,8 @@ _RE_SLUGLINE = re.compile(
 _RE_FORCED_SLUGLINE = re.compile(r"^\.")
 
 # ALL CAPS line — character name (may have extension in parens: JOHN (V.O.))
-_RE_CHARACTER = re.compile(r"^[A-Z][A-Z\s\-'\.]+(\s*\(.*\))?\s*$")
+# Allow commas in names (e.g. "JOHN CARTER, JR.") and periods / apostrophes.
+_RE_CHARACTER = re.compile(r"^[A-Z][A-Z\s\-\'\.,]+(\s*\(.*\))?\s*$")
 
 # Parenthetical: (beat), (quietly), etc.
 _RE_PARENTHETICAL = re.compile(r"^\(.*\)\s*$")
@@ -78,6 +87,18 @@ _RE_SYNOPSIS = re.compile(r"^=\s")
 
 # Mostly uppercase — heuristic threshold for "action-like" ALL CAPS
 _CAPS_RATIO_THRESHOLD = 0.7
+
+# Dual dialogue: ^ prefix (Fountain syntax for simultaneous dialogue)
+_RE_DUAL_DIALOGUE = re.compile(r"^\^")
+
+# Forced action: ! prefix to force action line classification
+_RE_FORCED_ACTION = re.compile(r"^!")
+
+# Emphasis: *text* or _text_ patterns
+_RE_EMPHASIS = re.compile(r"(\*[^*]+\*|_[^_]+_)")
+
+# Line breaks: <br>, <br/>, <br /> or double space at end of line
+_RE_LINE_BREAK = re.compile(r"(<br\s*/?>|\s{2,})")
 
 
 class FountainParser:
@@ -107,41 +128,84 @@ class FountainParser:
                 reason="Empty text",
             )
 
+        # ── Detect emphasis spans early (preserve in result) ──────────────────
+        emphasis_spans = self._detect_emphasis(stripped)
+
+        # ── Detect line breaks ────────────────────────────────────────────────
+        has_line_breaks = bool(_RE_LINE_BREAK.search(stripped))
+
         # ── Notes ─────────────────────────────────────────────────────────────
         if _RE_NOTE.match(stripped):
-            return self._no_check(FountainElement.NOTE, stripped, "Fountain note block")
+            return self._no_check(FountainElement.NOTE, stripped, "Fountain note block",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
 
         # ── Sections / Synopsis ───────────────────────────────────────────────
         if _RE_SECTION.match(stripped) or _RE_SYNOPSIS.match(stripped):
-            return self._no_check(FountainElement.UNKNOWN, stripped, "Fountain structure marker")
+            return self._no_check(FountainElement.UNKNOWN, stripped, "Fountain structure marker",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
 
         # ── Centered ──────────────────────────────────────────────────────────
         if _RE_CENTERED.match(stripped):
-            return self._no_check(FountainElement.CENTERED, stripped, "Centered text")
+            return self._no_check(FountainElement.CENTERED, stripped, "Centered text",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
 
         # ── Sluglines ─────────────────────────────────────────────────────────
         if _RE_SLUGLINE.match(stripped) or _RE_FORCED_SLUGLINE.match(stripped):
             self._in_dialogue_block = False
             self._last_element = FountainElement.SLUGLINE
-            return self._no_check(FountainElement.SLUGLINE, stripped, "Scene heading / slugline")
+            return self._no_check(FountainElement.SLUGLINE, stripped, "Scene heading / slugline",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
 
         # ── Transitions ───────────────────────────────────────────────────────
         if _RE_TRANSITION.match(stripped) or _RE_FORCED_TRANSITION.match(stripped):
             self._in_dialogue_block = False
             self._last_element = FountainElement.TRANSITION
-            return self._no_check(FountainElement.TRANSITION, stripped, "Transition directive")
+            return self._no_check(FountainElement.TRANSITION, stripped, "Transition directive",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
 
         # ── Parenthetical ─────────────────────────────────────────────────────
         if _RE_PARENTHETICAL.match(stripped):
             return self._no_check(
-                FountainElement.PARENTHETICAL, stripped, "Parenthetical / wryly"
+                FountainElement.PARENTHETICAL, stripped, "Parenthetical / wryly",
+                emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks
             )
 
         # ── Character name ────────────────────────────────────────────────────
         if _RE_CHARACTER.match(stripped) and len(stripped.split()) <= 6:
             self._in_dialogue_block = True
             self._last_element = FountainElement.CHARACTER
-            return self._no_check(FountainElement.CHARACTER, stripped, "Character name")
+            return self._no_check(FountainElement.CHARACTER, stripped, "Character name",
+                                  emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks)
+
+        # ── Dual Dialogue ─────────────────────────────────────────────────────
+        if _RE_DUAL_DIALOGUE.match(stripped):
+            self._in_dialogue_block = True
+            self._last_element = FountainElement.DIALOGUE
+            clean_text = stripped[1:].strip()  # Remove ^ prefix
+            return ParsedBlock(
+                element=FountainElement.DIALOGUE,
+                text=clean_text,
+                should_check=True,
+                reason="Dual dialogue block — grammar check applies",
+                is_dual_dialogue=True,
+                emphasis_spans=emphasis_spans,
+                has_line_breaks=has_line_breaks,
+            )
+
+        # ── Forced Action ─────────────────────────────────────────────────────
+        if _RE_FORCED_ACTION.match(stripped):
+            self._in_dialogue_block = False
+            self._last_element = FountainElement.ACTION
+            clean_text = stripped[1:].strip()  # Remove ! prefix
+            return ParsedBlock(
+                element=FountainElement.ACTION,
+                text=clean_text,
+                should_check=True,
+                reason="Forced action line — grammar check applies",
+                is_forced_action=True,
+                emphasis_spans=emphasis_spans,
+                has_line_breaks=has_line_breaks,
+            )
 
         # ── Dialogue ──────────────────────────────────────────────────────────
         if self._in_dialogue_block:
@@ -151,6 +215,8 @@ class FountainParser:
                 text=stripped,
                 should_check=True,
                 reason="Dialogue block — grammar check applies",
+                emphasis_spans=emphasis_spans,
+                has_line_breaks=has_line_breaks,
             )
 
         # ── Action lines ─────────────────────────────────────────────────────
@@ -162,7 +228,8 @@ class FountainParser:
         # Skip all-caps action lines (emphasis / sound effects)
         if self._is_mostly_caps(stripped):
             return self._no_check(
-                FountainElement.ACTION, stripped, "All-caps action / sound effect"
+                FountainElement.ACTION, stripped, "All-caps action / sound effect",
+                emphasis_spans=emphasis_spans, has_line_breaks=has_line_breaks
             )
 
         return ParsedBlock(
@@ -170,6 +237,8 @@ class FountainParser:
             text=stripped,
             should_check=True,
             reason="Action line — light grammar check (preserve fragments)",
+            emphasis_spans=emphasis_spans,
+            has_line_breaks=has_line_breaks,
         )
 
     def classify_raw_extract(self, raw: str) -> ParsedBlock:
@@ -202,13 +271,17 @@ class FountainParser:
 
     @staticmethod
     def _no_check(
-        element: FountainElement, text: str, reason: str
+        element: FountainElement, text: str, reason: str,
+        emphasis_spans: list[tuple[int, int]] | None = None,
+        has_line_breaks: bool = False,
     ) -> ParsedBlock:
         return ParsedBlock(
             element=element,
             text=text,
             should_check=False,
             reason=reason,
+            emphasis_spans=emphasis_spans,
+            has_line_breaks=has_line_breaks,
         )
 
     @staticmethod
@@ -218,6 +291,17 @@ class FountainParser:
             return False
         caps = sum(1 for c in letters if c.isupper())
         return (caps / len(letters)) >= _CAPS_RATIO_THRESHOLD
+
+    @staticmethod
+    def _detect_emphasis(text: str) -> list[tuple[int, int]]:
+        """
+        Detect emphasis spans (*text* or _text_) and return their positions.
+        Returns a list of (start, end) tuples for each emphasis span found.
+        """
+        spans: list[tuple[int, int]] = []
+        for match in _RE_EMPHASIS.finditer(text):
+            spans.append((match.start(), match.end()))
+        return spans
 
     @property
     def in_dialogue(self) -> bool:
