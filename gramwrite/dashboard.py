@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
 )
 
 from . import __version__
+from .config_store import save_config
 from .engine import GramEngine
 from .foundation_models import FOUNDATION_BACKEND_KEY, FOUNDATION_MODEL_ID
 from .harper import HARPER_BACKEND_KEY, HARPER_MODEL_ID
@@ -51,7 +52,7 @@ class DashboardWindow(QWidget):
 
     def __init__(self, config: dict, engine: GramEngine):
         super().__init__(None)
-        self._config = dict(config)
+        self._config = config
         self._engine = engine
         self._is_macos = sys.platform == "darwin"
         self._last_local_model = self._config.get("model", "qwen3.5:0.8b")
@@ -882,35 +883,38 @@ class DashboardWindow(QWidget):
         self._loader.start()
 
     def _save(self, save_button: Optional[QPushButton] = None):
-        self._config["backend"] = self._backend_combo.currentText()
-        if self._config["backend"] == FOUNDATION_BACKEND_KEY:
-            self._config["model"] = FOUNDATION_MODEL_ID
-        elif self._config["backend"] == HARPER_BACKEND_KEY:
-            self._config["model"] = HARPER_MODEL_ID
+        updated_config = dict(self._config)
+        updated_config["backend"] = self._backend_combo.currentText()
+        if updated_config["backend"] == FOUNDATION_BACKEND_KEY:
+            updated_config["model"] = FOUNDATION_MODEL_ID
+        elif updated_config["backend"] == HARPER_BACKEND_KEY:
+            updated_config["model"] = HARPER_MODEL_ID
         else:
-            self._config["model"] = self._model_combo.currentText().strip()
-            if self._config["model"]:
-                self._last_local_model = self._config["model"]
-        self._config["sensitivity"] = SENSITIVITY_MAP[SENSITIVITY_LABELS[self._sensitivity_slider.value()]]
-        self._config["system_prompt"] = self._prompt_edit.toPlainText().strip()
-        self._config["strict_mode"] = self._strict_mode_checkbox.isChecked()
-        self._config["debounce_seconds"] = self._parse_float(self._debounce_input.text(), 2.0, 0.1)
-        self._config["max_context_chars"] = self._parse_int(self._max_context_input.text(), 300, 50)
-        self._config["dashboard_port"] = self._parse_int(self._dashboard_port_input.text(), 7878, 1)
+            updated_config["model"] = self._model_combo.currentText().strip()
+            if updated_config["model"]:
+                self._last_local_model = updated_config["model"]
+        updated_config["sensitivity"] = SENSITIVITY_MAP[SENSITIVITY_LABELS[self._sensitivity_slider.value()]]
+        updated_config["system_prompt"] = self._prompt_edit.toPlainText().strip()
+        updated_config["strict_mode"] = self._strict_mode_checkbox.isChecked()
+        updated_config["debounce_seconds"] = self._parse_float(self._debounce_input.text(), 2.0, 0.1)
+        updated_config["max_context_chars"] = self._parse_int(self._max_context_input.text(), 300, 50)
+        updated_config["dashboard_port"] = self._parse_int(self._dashboard_port_input.text(), 7878, 1)
 
         try:
-            import yaml
-
-            config_path = self._config.get("_config_path", "config.yaml")
-            save_data = {k: v for k, v in self._config.items() if not k.startswith("_")}
-            with open(config_path, "w") as f:
-                yaml.dump(save_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            config_path = save_config(updated_config, updated_config.get("_config_path", "config.yaml"))
+            updated_config["_config_path"] = str(config_path)
             logger.info("Config saved to %s", config_path)
         except Exception as exc:
             logger.warning("Could not save config: %s", exc)
+            if save_button is not None:
+                save_button.setText("Save failed")
+                QTimer.singleShot(1800, lambda: save_button.setText("Save Settings"))
+            return
 
+        self._config.clear()
+        self._config.update(updated_config)
         self._refresh_status_card()
-        self.config_updated.emit(self._config)
+        self.config_updated.emit(dict(self._config))
         if save_button is not None:
             save_button.setText("Saved ✓")
             QTimer.singleShot(1800, lambda: save_button.setText("Save Settings"))

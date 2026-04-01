@@ -551,7 +551,11 @@ class AsyncWorkerThread(QThread):
 
         # Start Web Dashboard
         port = self._config.get("dashboard_port", 7878)
-        self._web = WebDashboard(self._config, self._controller.engine)
+        self._web = WebDashboard(
+            self._config,
+            self._controller.engine,
+            on_update=lambda updated: asyncio.create_task(self._controller.apply_config(updated)),
+        )
         
         async def main_loop():
             # Start web server as a concurrent task
@@ -576,6 +580,15 @@ class AsyncWorkerThread(QThread):
         if hasattr(self, "_web") and self._loop:
             asyncio.run_coroutine_threadsafe(
                 self._web.stop(), self._loop
+            )
+
+    def apply_config(self, config: dict):
+        updated_config = dict(config)
+        self._config.clear()
+        self._config.update(updated_config)
+        if self._controller and self._loop:
+            asyncio.run_coroutine_threadsafe(
+                self._controller.apply_config(self._config), self._loop
             )
 
 
@@ -644,6 +657,7 @@ def run_app(config: dict, show_dashboard: bool = False):
 
     # Start async controller in background thread
     worker = AsyncWorkerThread(config, bridge)
+    dashboard.config_updated.connect(worker.apply_config)
     worker.start()
 
     bridge.state_changed.emit("idle")

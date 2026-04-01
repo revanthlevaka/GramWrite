@@ -9,46 +9,11 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 
-import yaml
-
 from . import __version__
-
-
-def load_config(path: Path) -> dict:
-    """Load config.yaml, fall back to defaults if missing."""
-    defaults = {
-        "backend": "auto",
-        "model": "qwen3.5:0.8b",
-        "sensitivity": "medium",
-        "strict_mode": True,
-        "system_prompt": (
-            "You are a Hollywood script doctor.\n"
-            "Correct grammar and spelling only.\n"
-            "Do NOT rewrite stylistic fragments.\n"
-            "Do NOT modify ALL CAPS character names or sluglines.\n"
-            "Preserve pacing and rhythm of screenplay writing.\n"
-            "If the text has no errors, respond with exactly: NO_CORRECTION\n"
-            "If there is an error, respond with ONLY the corrected sentence."
-        ),
-        "debounce_seconds": 2.0,
-        "max_context_chars": 300,
-        "dashboard_port": 7878,
-    }
-
-    if path.exists():
-        try:
-            with open(path) as f:
-                user_config = yaml.safe_load(f) or {}
-            defaults.update(user_config)
-        except Exception as e:
-            print(f"Warning: Could not read {path}: {e}", file=sys.stderr)
-
-    defaults["_config_path"] = str(path)
-    return defaults
+from .config_store import DEFAULT_CONFIG, load_config, resolve_config_path
 
 
 def setup_logging(verbose: bool):
@@ -103,7 +68,14 @@ def main():
     args = parser.parse_args()
 
     setup_logging(args.verbose)
-    config = load_config(args.config)
+    explicit_config = any(arg == "--config" or arg.startswith("--config=") for arg in sys.argv[1:])
+    config_path = resolve_config_path(args.config, explicit=explicit_config)
+    try:
+        config = load_config(config_path)
+    except Exception as exc:
+        print(f"Warning: Could not read {config_path}: {exc}", file=sys.stderr)
+        config = dict(DEFAULT_CONFIG)
+        config["_config_path"] = str(config_path)
 
     if args.port is not None:
         config["dashboard_port"] = args.port

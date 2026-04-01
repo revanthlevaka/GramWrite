@@ -109,6 +109,23 @@ class Controller:
         await self._engine.close()
         logger.info("Controller stopped")
 
+    async def apply_config(self, config: dict):
+        updated_config = dict(config)
+        self.config.clear()
+        self.config.update(updated_config)
+
+        self._strict_mode = self.config.get("strict_mode", True)
+        sensitivity = self.config.get("sensitivity", "medium")
+        self._min_length = {"low": 30, "medium": 15, "high": 5}.get(sensitivity, 15)
+        self._watcher.debounce_secs = float(self.config.get("debounce_seconds", 2.0))
+        await self._engine.apply_config(self.config)
+        logger.info(
+            "Runtime config updated: backend=%s model=%s debounce=%.1fs",
+            self.config.get("backend", "auto"),
+            self.config.get("model", "qwen3.5:0.8b"),
+            self._watcher.debounce_secs,
+        )
+
     async def _on_text_received(self, text: str):
         """
         Called by Watcher after debounce. Enqueues text for processing.

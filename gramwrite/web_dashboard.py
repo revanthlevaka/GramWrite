@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Optional, Callable
 
 from aiohttp import web
-import yaml
 
+from .config_store import save_config
 from .engine import GramEngine
 from .foundation_models import FOUNDATION_BACKEND_KEY, FOUNDATION_MODEL_ID
 from .harper import HARPER_BACKEND_KEY, HARPER_MODEL_ID
@@ -70,23 +70,20 @@ class WebDashboard:
     async def handle_post_config(self, request):
         try:
             data = await request.json()
-            # Update live config
+            updated_config = dict(self.config)
             for k, v in data.items():
                 if not k.startswith('_'):
-                    self.config[k] = v
-            
-            # Persist to disk
-            config_path = self.config.get('_config_path', 'config.yaml')
-            save_data = {k: v for k, v in self.config.items() if not k.startswith('_')}
-            
-            with open(config_path, 'w') as f:
-                yaml.dump(save_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-            
+                    updated_config[k] = v
+
+            config_path = save_config(updated_config, updated_config.get('_config_path', 'config.yaml'))
+            updated_config["_config_path"] = str(config_path)
             logger.info("Config updated via Web Dashboard and saved to %s", config_path)
-            
+
+            self.config.clear()
+            self.config.update(updated_config)
             if self.on_update:
-                self.on_update(self.config)
-            
+                self.on_update(dict(self.config))
+
             return web.json_response({"status": "ok"})
         except Exception as e:
             logger.error("Failed to update config via web: %s", e)

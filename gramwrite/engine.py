@@ -81,6 +81,13 @@ class GramEngine:
         self._foundation = FoundationModelsBridge()
         self._harper = HarperBridge()
 
+    async def apply_config(self, config: dict):
+        async with self._lock:
+            self.config = config
+            self.model = config.get("model", "qwen3.5:0.8b")
+            self.system_prompt = config.get("system_prompt", SYSTEM_PROMPT_DEFAULT)
+            self.backend = Backend.NONE
+
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
             timeout = aiohttp.ClientTimeout(total=15, connect=3)
